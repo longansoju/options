@@ -40,8 +40,27 @@ ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY", "")
 ALPACA_PAPER = True  # hard-coded; never set to False here
 
-# --- Default scan watchlist ---
-WATCHLIST = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META"]
+# --- AI Stack watchlist (categorized) ---
+AI_STACK: dict[str, list[str]] = {
+    # Custom XPUs/DPUs with hyperscaler design wins (Google, AWS, Meta)
+    "ai_compute_asic": ["AVGO", "MRVL"],
+    # HBM3E — the memory physically stacked on every AI accelerator
+    "ai_memory": ["MU"],
+    # Nearline HDD + NAND for petabyte-scale training data lakes
+    "ai_storage": ["STX", "WDC"],
+    # 800G/1.6T optical transceivers — GPU cluster interconnect plumbing
+    "ai_optical": ["COHR"],
+    # GaN power ICs for high-density data center PSUs
+    "ai_power": ["NVTS"],
+    # Independent GPU cloud (Nebius Group) — pure-play AI infra
+    "ai_cloud_infra": ["NBIS"],
+}
+
+# Flat watchlist: broad market anchors + full AI stack
+WATCHLIST: list[str] = (
+    ["SPY", "QQQ", "NVDA", "AAPL", "MSFT", "TSLA", "AMZN", "META"]
+    + [ticker for tickers in AI_STACK.values() for ticker in tickers]
+)
 
 # --- IV Rank computation ---
 IV_RANK_MIN_HISTORY_DAYS = 30   # minimum cached IV days before using real IVR
