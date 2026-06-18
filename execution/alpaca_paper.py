@@ -69,14 +69,15 @@ class AlpacaPaperBroker:
 
     def buy(self, contract: OptionContract, size: SizeResult) -> Fill:
         """
-        Place a limit BUY order at the ask price (crossing the spread, C3/C2 enforced).
-        Only long (BUY) orders are allowed.
+        Place a limit BUY order at the effective ask price (crosses the spread).
+        Falls back to last-trade price when bid/ask quotes are stale (yfinance gap).
+        Only long (BUY) orders are allowed (C2/C3).
         """
         from alpaca.trading.requests import LimitOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
 
-        fill_price = contract.ask  # realistic: cross the spread
-        limit_price = round(fill_price * 1.01, 2)  # small buffer above ask for fill certainty
+        fill_price = contract.effective_ask          # handles stale 0/0 quotes
+        limit_price = round(fill_price * 1.02, 2)   # 2% buffer for fill certainty on stale quotes
 
         order_request = LimitOrderRequest(
             symbol=contract.symbol,
