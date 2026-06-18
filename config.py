@@ -91,7 +91,7 @@ DIVERSIFICATION: dict[str, list[str]] = {
     # Payment networks — transaction volume tied to consumer spending
     "financials_payments":  ["V", "MA", "AXP"],
     # Watching but not yet actionable (HIGH IVR or WEAK trend today)
-    "watchlist_pending":    ["GS", "FCX", "CAT", "NUE", "COIN", "NFLX"],
+    "watchlist_pending":    ["GS", "FCX", "CAT", "NUE", "COIN", "NFLX", "PLTR"],
 }
 IV_RANK_MIN_HISTORY_DAYS = 30   # minimum cached IV days before using real IVR
 IV_RANK_LOOKBACK_DAYS = 252     # ~52 trading weeks
