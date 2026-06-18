@@ -3,8 +3,7 @@ Phase 1 spine: scan one symbol, compute IV Rank, select contract, size, execute,
 
 Usage:
     python main.py --symbol AAPL --direction bullish
-    python main.py --symbol TSLA --direction bearish
-    python main.py --symbol SPY  --direction bullish --dry-run
+    python main.py --symbol TSLA --direction bearish --dry-run
 """
 from __future__ import annotations
 
@@ -30,17 +29,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _check_entry_rules(
-    symbol: str,
-    direction: str,
-    iv_result,
-    events,
-) -> tuple[bool, str]:
-    """
-    Returns (allowed: bool, reason: str).
-    Entry is blocked if any hard entry rule fails.
-    """
-    # Rule 1: IVR must be LOW
+def _check_entry_rules(symbol, direction, iv_result, events):
+    """Returns (allowed: bool, reason: str)."""
     if iv_result is None:
         return False, "Could not compute IV Rank (no data)."
 
@@ -56,178 +46,20 @@ def _check_entry_rules(
             f"(< {config.IVR_LOW_THRESHOLD}). Stand aside."
         )
 
-    # Rule 2: Warn if no catalyst found (not a hard block — directional trades allowed)
     upcoming = [e for e in events if e.date >= date.today()]
     if not upcoming:
-        logger.warning("%s: no upcoming catalyst found in earnings calendar. "
-                       "Proceeding on directional thesis only.", symbol)
+        logger.warning(
+            "%s: no upcoming catalyst found in earnings calendar — "
+            "proceeding on directional thesis only.", symbol
+        )
 
-    # Rule 3: direction must be bullish or bearish (not neutral for Phase 1)
     if direction not in ("bullish", "bearish"):
-        return False, f"Direction '{direction}' not supported in Phase 1 (use bullish/bearish)."
+        return False, f"Direction '{direction}' not supported in Phase 1."
 
     return True, "Entry rules passed."
 
 
-def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
-    provider = YFinanceProvider()
-    classifier = IVRankClassifier()
-    selector = ContractSelector()
-    sizer = PositionSizer()
-    journal = JournalLogger()
-
-    logger.info("Scanning %s | direction=%s | dry_run=%s", symbol, direction, dry_run)
-
-    # --- Data ingestion ---
-    logger.info("Fetching options chain for %s …", symbol)
-    chain = provider.options_chain(symbol)
-    logger.info("Fetched %d contracts across %d expirations", len(chain.contracts),
-                len({c.expiration for c in chain.contracts}))
-
-    logger.info("Fetching IV history for %s …", symbol)
-    iv_series = provider.iv_history(symbol, config.IV_RANK_LOOKBACK_DAYS)
-
-    logger.info("Fetching earnings calendar for %s …", symbol)
-    events = provider.earnings_calendar(symbol)
-    for e in events:
-        logger.info("  Catalyst: %s on %s (confirmed=%s)", e.event_type, e.date, e.confirmed)
-
-    # --- IV Rank ---
-    iv_result = classifier.classify(iv_series)
-    if iv_result:
-        logger.info("IV Rank: %s", iv_result.rationale)
-
-    # --- Entry rules ---
-    structure = "long_call" if direction == "bullish" else "long_put"
-    try:
-        sizer.check_strategy(structure)
-    except GuardrailViolation as exc:
-        _refuse(journal, symbol, structure, [], str(exc))
-        return
-
-    allowed, reason = _check_entry_rules(symbol, direction, iv_result, events)
-    if not allowed:
-        _refuse(journal, symbol, structure,
-                [Signal("iv_rank", iv_result.iv_rank if iv_result else 0, "neutral",
-                        "strong", reason)],
-                reason,
-                iv_result=iv_result)
-        return
-
-    # --- Contract selection ---
-    contract = selector.select(chain, direction)
-    if contract is None:
-        reason = (f"No liquid contract found for {symbol} {direction} in "
-                  f"{config.MIN_DTE_AT_ENTRY}–{config.MAX_DTE_AT_ENTRY} DTE window.")
-        _refuse(journal, symbol, structure, [], reason, iv_result=iv_result)
-        return
-
-    logger.info(
-        "Selected contract: %s  strike=%.2f  DTE=%d  IV=%.2%%  bid/ask=%.2f/%.2f  "
-        "OI=%d  vol=%d  spread=%.1f%%",
-        contract.symbol, contract.strike, contract.dte,
-        contract.implied_volatility,
-        contract.bid, contract.ask, contract.open_interest, contract.volume,
-        contract.spread_pct,
-    )
-
-    # --- Position sizing ---
-    if dry_run:
-        account_equity = 10_000.0
-        open_risk = 0.0
-    else:
-        broker = AlpacaPaperBroker()
-        account_equity = broker.get_account_equity()
-        open_risk = broker.get_open_position_risk()
-
-    try:
-        size = sizer.compute_size(contract, account_equity, open_risk)
-    except GuardrailViolation as exc:
-        _refuse(journal, symbol, structure, [], str(exc), iv_result=iv_result)
-        return
-
-    logger.info(
-        "Size: %d contract(s), max_loss=$%.2f (%.2f%% of equity), commission=$%.2f",
-        size.contracts, size.total_max_loss, size.risk_pct_of_equity, size.commission,
-    )
-
-    # --- Build signals & recommendation ---
-    signals: list[Signal] = []
-    if iv_result:
-        signals.append(Signal(
-            name="iv_rank",
-            value=iv_result.iv_rank,
-            direction="bullish" if direction == "bullish" else "bearish",
-            strength="strong" if iv_result.iv_rank < 20 else "moderate",
-            rationale=iv_result.rationale,
-        ))
-
-    upcoming_catalysts = [e for e in events if e.date >= date.today()]
-    if upcoming_catalysts:
-        next_cat = upcoming_catalysts[0]
-        days_to_cat = (next_cat.date - date.today()).days
-        signals.append(Signal(
-            name="catalyst",
-            value=float(days_to_cat),
-            direction=direction,
-            strength="strong" if days_to_cat <= 30 else "moderate",
-            rationale=f"{next_cat.event_type} in {days_to_cat} days on {next_cat.date}",
-        ))
-
-    ivr_str = f"IVR={iv_result.iv_rank:.1f}" if iv_result else "IVR=N/A"
-    next_cat_str = (f" | {upcoming_catalysts[0].event_type} in "
-                    f"{(upcoming_catalysts[0].date - date.today()).days}d"
-                    if upcoming_catalysts else "")
-    thesis = (
-        f"{direction.upper()} on {symbol}: {ivr_str} (LOW — cheap premium){next_cat_str}. "
-        f"Buying {structure.replace('_', ' ')} {contract.symbol} "
-        f"(strike={contract.strike}, DTE={contract.dte}, IV={contract.implied_volatility:.1%}). "
-        f"Max loss = ${size.total_max_loss:.2f}."
-    )
-
-    rec = Recommendation(
-        action="buy",
-        symbol=symbol,
-        contract=contract,
-        structure=structure,
-        max_loss=size.total_max_loss,
-        size=size.contracts,
-        thesis=thesis,
-        signals=signals,
-        guardrails_checked=True,
-    )
-
-    # --- Execution ---
-    fill: Fill | None = None
-    if not dry_run:
-        try:
-            fill = broker.buy(contract, size)
-            logger.info("Fill confirmed: order_id=%s", fill.order_id)
-        except Exception as exc:
-            logger.error("Order submission failed: %s", exc)
-            rec.action = "refuse"
-            rec.refused_reason = f"Order failed: {exc}"
-
-    # --- Journal ---
-    decision_id = journal.log_recommendation(
-        rec,
-        ivr=iv_result.iv_rank if iv_result else None,
-        ivr_regime=iv_result.regime.value if iv_result else None,
-        ivr_is_proxy=iv_result.is_proxy if iv_result else False,
-        fill=fill,
-        risk_pct_equity=size.risk_pct_of_equity,
-    )
-    logger.info("Logged decision_id=%d", decision_id)
-
-
-def _refuse(
-    journal: JournalLogger,
-    symbol: str,
-    structure: str,
-    signals: list,
-    reason: str,
-    iv_result=None,
-) -> None:
+def _refuse(journal, symbol, structure, signals, reason, iv_result=None):
     rec = Recommendation(
         action="refuse",
         symbol=symbol,
@@ -249,16 +81,177 @@ def _refuse(
     logger.warning("REFUSED %s: %s", symbol, reason)
 
 
+def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
+    provider = YFinanceProvider()
+    classifier = IVRankClassifier()
+    selector = ContractSelector()
+    sizer = PositionSizer()
+    journal = JournalLogger()
+
+    logger.info("Scanning %s | direction=%s | dry_run=%s", symbol, direction, dry_run)
+
+    # --- Data ingestion ---
+    logger.info("Fetching options chain for %s …", symbol)
+    chain = provider.options_chain(symbol)
+    logger.info(
+        "Fetched %d contracts across %d expirations",
+        len(chain.contracts),
+        len({c.expiration for c in chain.contracts}),
+    )
+
+    logger.info("Fetching IV history for %s …", symbol)
+    iv_series = provider.iv_history(symbol, config.IV_RANK_LOOKBACK_DAYS)
+
+    logger.info("Fetching earnings calendar for %s …", symbol)
+    events = provider.earnings_calendar(symbol)
+    for e in events:
+        logger.info("  Catalyst: %s on %s (confirmed=%s)", e.event_type, e.date, e.confirmed)
+
+    # --- IV Rank ---
+    iv_result = classifier.classify(iv_series)
+    if iv_result:
+        logger.info("IV Rank: %s", iv_result.rationale)
+
+    # --- Strategy guardrail (C2/C3) ---
+    structure = "long_call" if direction == "bullish" else "long_put"
+    try:
+        sizer.check_strategy(structure)
+    except GuardrailViolation as exc:
+        _refuse(journal, symbol, structure, [], str(exc))
+        return
+
+    # --- Entry rules ---
+    allowed, reason = _check_entry_rules(symbol, direction, iv_result, events)
+    if not allowed:
+        signals = []
+        if iv_result:
+            signals.append(Signal(
+                name="iv_rank", value=iv_result.iv_rank, direction="neutral",
+                strength="strong", rationale=reason,
+            ))
+        _refuse(journal, symbol, structure, signals, reason, iv_result=iv_result)
+        return
+
+    # --- Contract selection ---
+    contract = selector.select(chain, direction)
+    if contract is None:
+        reason = (
+            f"No liquid contract found for {symbol} {direction} in "
+            f"{config.MIN_DTE_AT_ENTRY}–{config.MAX_DTE_AT_ENTRY} DTE window."
+        )
+        _refuse(journal, symbol, structure, [], reason, iv_result=iv_result)
+        return
+
+    logger.info(
+        "Selected: %s  strike=%.2f  DTE=%d  IV=%.1f%%  bid/ask=%.2f/%.2f  OI=%d  vol=%d  spread=%.1f%%",
+        contract.symbol, contract.strike, contract.dte,
+        contract.implied_volatility * 100,
+        contract.bid, contract.ask, contract.open_interest, contract.volume,
+        contract.spread_pct,
+    )
+
+    # --- Account info & position sizing ---
+    broker: AlpacaPaperBroker | None = None
+    if dry_run:
+        account_equity = 10_000.0
+        open_risk = 0.0
+    else:
+        broker = AlpacaPaperBroker()
+        account_equity = broker.get_account_equity()
+        open_risk = broker.get_open_position_risk()
+
+    try:
+        size = sizer.compute_size(contract, account_equity, open_risk)
+    except GuardrailViolation as exc:
+        _refuse(journal, symbol, structure, [], str(exc), iv_result=iv_result)
+        return
+
+    logger.info(
+        "Size: %d contract(s)  max_loss=$%.2f (%.2f%% equity)  commission=$%.2f",
+        size.contracts, size.total_max_loss, size.risk_pct_of_equity, size.commission,
+    )
+
+    # --- Build signals ---
+    signals: list[Signal] = []
+    if iv_result:
+        signals.append(Signal(
+            name="iv_rank",
+            value=iv_result.iv_rank,
+            direction=direction,
+            strength="strong" if iv_result.iv_rank < 20 else "moderate",
+            rationale=iv_result.rationale,
+        ))
+
+    upcoming = [e for e in events if e.date >= date.today()]
+    if upcoming:
+        next_cat = upcoming[0]
+        days_away = (next_cat.date - date.today()).days
+        signals.append(Signal(
+            name="catalyst",
+            value=float(days_away),
+            direction=direction,
+            strength="strong" if days_away <= 30 else "moderate",
+            rationale=f"{next_cat.event_type} in {days_away} days on {next_cat.date}",
+        ))
+
+    ivr_str = f"IVR={iv_result.iv_rank:.1f}" if iv_result else "IVR=N/A"
+    cat_str = (
+        f" | {upcoming[0].event_type} in {(upcoming[0].date - date.today()).days}d"
+        if upcoming else ""
+    )
+    thesis = (
+        f"{direction.upper()} on {symbol}: {ivr_str} (LOW — cheap premium){cat_str}. "
+        f"Buying {structure.replace('_', ' ')} {contract.symbol} "
+        f"(strike={contract.strike}, DTE={contract.dte}, "
+        f"IV={contract.implied_volatility:.1%}). "
+        f"Max loss = ${size.total_max_loss:.2f}."
+    )
+
+    rec = Recommendation(
+        action="buy",
+        symbol=symbol,
+        contract=contract,
+        structure=structure,
+        max_loss=size.total_max_loss,
+        size=size.contracts,
+        thesis=thesis,
+        signals=signals,
+        guardrails_checked=True,
+    )
+
+    # --- Execution ---
+    fill: Fill | None = None
+    if not dry_run and broker is not None:
+        try:
+            fill = broker.buy(contract, size)
+            logger.info("Fill confirmed: order_id=%s", fill.order_id)
+        except Exception as exc:
+            logger.error("Order submission failed: %s", exc)
+            rec.action = "refuse"
+            rec.refused_reason = f"Order failed: {exc}"
+
+    # --- Journal ---
+    decision_id = journal.log_recommendation(
+        rec,
+        ivr=iv_result.iv_rank if iv_result else None,
+        ivr_regime=iv_result.regime.value if iv_result else None,
+        ivr_is_proxy=iv_result.is_proxy if iv_result else False,
+        fill=fill,
+        risk_pct_equity=size.risk_pct_of_equity,
+    )
+    logger.info("Logged decision_id=%d to %s", decision_id, config.JOURNAL_DB_PATH)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Options paper-trading agent — Phase 1 spine")
     parser.add_argument("--symbol", required=True, help="Underlying ticker, e.g. AAPL")
     parser.add_argument(
         "--direction", required=True, choices=["bullish", "bearish"],
-        help="Directional thesis"
+        help="Directional thesis",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
-        help="Skip Alpaca order submission; uses $10k mock equity"
+        help="Skip Alpaca order; uses $10k mock equity for sizing",
     )
     args = parser.parse_args()
     scan(args.symbol.upper(), args.direction, dry_run=args.dry_run)
