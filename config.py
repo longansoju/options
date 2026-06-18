@@ -29,7 +29,7 @@ DTE_FLOOR = 7                   # never hold past this many days to expiry
 CATALYST_EXIT_BUFFER_DAYS = 1   # close at least this many days before known catalyst
 
 # --- Entry filters (section 4.5 liquidity) ---
-MAX_BID_ASK_SPREAD_PCT = 5.0    # max (ask-bid)/mid as a percentage
+MAX_BID_ASK_SPREAD_PCT = 10.0   # max (ask-bid)/mid as a percentage; 10% accommodates lower-priced OTM options
 MIN_OPEN_INTEREST = 100
 MIN_VOLUME = 10
 
