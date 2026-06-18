@@ -37,9 +37,10 @@ MIN_VOLUME = 10
 MIN_DTE_AT_ENTRY = 21
 MAX_DTE_AT_ENTRY = 48
 
-# --- Target delta for strike selection (OTM bias) ---
-TARGET_DELTA_CALL = 0.40   # slightly OTM call
-TARGET_DELTA_PUT = -0.40   # slightly OTM put
+# --- OTM strike targeting (momentum/accumulation style) ---
+# Selector targets this % OTM then walks in until budget is met.
+TARGET_OTM_PCT_CALL = 0.12   # 12% above spot for calls
+TARGET_OTM_PCT_PUT  = 0.12   # 12% below spot for puts
 
 # --- Commissions (per contract leg) ---
 COMMISSION_PER_CONTRACT = 0.65  # USD

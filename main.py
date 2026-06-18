@@ -176,25 +176,7 @@ def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
         _refuse(journal, symbol, structure, signals, reason, iv_result=iv_result)
         return
 
-    # --- Contract selection ---
-    contract = selector.select(chain, direction)
-    if contract is None:
-        reason = (
-            f"No liquid contract found for {symbol} {direction} in "
-            f"{config.MIN_DTE_AT_ENTRY}–{config.MAX_DTE_AT_ENTRY} DTE window."
-        )
-        _refuse(journal, symbol, structure, [], reason, iv_result=iv_result)
-        return
-
-    logger.info(
-        "Selected: %s  strike=%.2f  DTE=%d  IV=%.1f%%  bid/ask=%.2f/%.2f  OI=%d  vol=%d  spread=%.1f%%",
-        contract.symbol, contract.strike, contract.dte,
-        contract.implied_volatility * 100,
-        contract.bid, contract.ask, contract.open_interest, contract.volume,
-        contract.spread_pct,
-    )
-
-    # --- Account info & position sizing ---
+    # --- Account info (needed before selection for budget-aware strike picking) ---
     broker: AlpacaPaperBroker | None = None
     if dry_run:
         account_equity = 10_000.0
@@ -203,6 +185,29 @@ def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
         broker = AlpacaPaperBroker()
         account_equity = broker.get_account_equity()
         open_risk = broker.get_open_position_risk()
+
+    max_budget = account_equity * config.MAX_RISK_PER_TRADE_PCT / 100.0 * risk_mult
+
+    # --- Contract selection (budget-aware, OTM-first) ---
+    contract = selector.select(chain, direction, max_budget=max_budget)
+    if contract is None:
+        otm_pct = config.TARGET_OTM_PCT_CALL if direction == "bullish" else config.TARGET_OTM_PCT_PUT
+        reason = (
+            f"No affordable OTM contract found for {symbol} {direction} in "
+            f"{config.MIN_DTE_AT_ENTRY}–{config.MAX_DTE_AT_ENTRY} DTE window "
+            f"(target ~{otm_pct:.0%} OTM, budget=${max_budget:.0f})."
+        )
+        _refuse(journal, symbol, structure, [], reason, iv_result=iv_result)
+        return
+
+    otm_pct_actual = abs(contract.strike / chain.spot_price - 1) * 100
+    logger.info(
+        "Selected: %s  strike=%.2f  DTE=%d  OTM=%.1f%%  cost=$%.0f  "
+        "bid/ask=%.2f/%.2f  OI=%d  vol=%d",
+        contract.symbol, contract.strike, contract.dte, otm_pct_actual,
+        contract.effective_ask * 100,
+        contract.bid, contract.ask, contract.open_interest, contract.volume,
+    )
 
     try:
         size = sizer.compute_size(contract, account_equity, open_risk, risk_multiplier=risk_mult)
