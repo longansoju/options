@@ -46,6 +46,7 @@ class PositionSizer:
         contract: OptionContract,
         account_equity: float,
         open_position_risk: float = 0.0,
+        risk_multiplier: float = 1.0,
     ) -> SizeResult:
         """
         Compute how many contracts can be bought without violating C5/C6.
@@ -61,8 +62,8 @@ class PositionSizer:
         # C5: max loss per contract = ask price * 100 (one contract = 100 shares)
         max_loss_per_contract = contract.ask * 100.0
 
-        # C6: max risk per trade
-        max_risk_dollars = account_equity * config.MAX_RISK_PER_TRADE_PCT / 100.0
+        # C6: max risk per trade (reduced by risk_multiplier for elevated-IVR momentum entries)
+        max_risk_dollars = account_equity * config.MAX_RISK_PER_TRADE_PCT / 100.0 * risk_multiplier
         contracts = int(max_risk_dollars / max_loss_per_contract)
         if contracts < 1:
             raise GuardrailViolation(

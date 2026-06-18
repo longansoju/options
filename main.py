@@ -14,6 +14,7 @@ from datetime import date
 
 import config
 from analysis.iv_regime import IVRankClassifier, IVRegime
+from analysis.trend import TrendAnalyzer, TrendSignal
 from data_ingestion.base import Recommendation, Signal
 from data_ingestion.yfinance_provider import YFinanceProvider
 from decision_engine.selector import ContractSelector
@@ -29,34 +30,69 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _check_entry_rules(symbol, direction, iv_result, events):
-    """Returns (allowed: bool, reason: str)."""
+def _check_entry_rules(symbol, direction, iv_result, events, trend_result=None):
+    """
+    Returns (allowed: bool, reason: str, risk_multiplier: float).
+
+    Momentum override: when IVR is MEDIUM or HIGH-but-under-70, a strong
+    price trend can unlock entry with reduced position size.
+    """
     if iv_result is None:
-        return False, "Could not compute IV Rank (no data)."
+        return False, "Could not compute IV Rank (no data).", 1.0
+
+    ivr = iv_result.iv_rank
+
+    # Hard ceiling — never buy above this IVR regardless of trend
+    if ivr > config.IVR_MOMENTUM_OVERRIDE_MAX:
+        return False, (
+            f"IVR={ivr:.1f} exceeds hard ceiling of {config.IVR_MOMENTUM_OVERRIDE_MAX}. "
+            "Premium too expensive even with strong trend."
+        ), 1.0
+
+    risk_mult = 1.0
 
     if iv_result.regime == IVRegime.HIGH:
-        return False, (
-            f"IVR={iv_result.iv_rank:.1f} is HIGH (>{config.IVR_HIGH_THRESHOLD}). "
-            "Options are expensive. Refusing naked long to avoid buying into inflated premium."
+        # IVR 50–70: only STRONG trend unlocks entry
+        if trend_result is None or trend_result.signal != TrendSignal.STRONG:
+            trend_desc = trend_result.signal.value if trend_result else "unknown"
+            return False, (
+                f"IVR={ivr:.1f} is HIGH. Momentum override requires STRONG trend "
+                f"(got {trend_desc}). Stand aside."
+            ), 1.0
+        risk_mult = config.MOMENTUM_RISK_MULT_HIGH
+        logger.info(
+            "%s: MOMENTUM OVERRIDE (HIGH IVR) — trend=%s, sizing at %.0f%% normal risk",
+            symbol, trend_result.signal.value, risk_mult * 100,
         )
 
-    if iv_result.regime == IVRegime.MEDIUM:
-        return False, (
-            f"IVR={iv_result.iv_rank:.1f} is MEDIUM. Entry requires LOW IVR "
-            f"(< {config.IVR_LOW_THRESHOLD}). Stand aside."
+    elif iv_result.regime == IVRegime.MEDIUM:
+        # IVR 30–50: STRONG or MODERATE trend unlocks entry
+        if trend_result is None or trend_result.signal == TrendSignal.WEAK:
+            trend_desc = trend_result.signal.value if trend_result else "unknown"
+            return False, (
+                f"IVR={ivr:.1f} is MEDIUM and trend is {trend_desc}. Stand aside."
+            ), 1.0
+        if trend_result.signal == TrendSignal.NEUTRAL:
+            return False, (
+                f"IVR={ivr:.1f} is MEDIUM and trend is NEUTRAL. "
+                "Need STRONG or MODERATE trend for momentum override."
+            ), 1.0
+        risk_mult = config.MOMENTUM_RISK_MULT_MEDIUM
+        logger.info(
+            "%s: MOMENTUM OVERRIDE (MEDIUM IVR) — trend=%s, sizing at %.0f%% normal risk",
+            symbol, trend_result.signal.value, risk_mult * 100,
         )
 
     upcoming = [e for e in events if e.date >= date.today()]
     if not upcoming:
         logger.warning(
-            "%s: no upcoming catalyst found in earnings calendar — "
-            "proceeding on directional thesis only.", symbol
+            "%s: no upcoming catalyst in earnings calendar — proceeding on trend thesis only.", symbol
         )
 
     if direction not in ("bullish", "bearish"):
-        return False, f"Direction '{direction}' not supported in Phase 1."
+        return False, f"Direction '{direction}' not supported in Phase 1.", 1.0
 
-    return True, "Entry rules passed."
+    return True, "Entry rules passed.", risk_mult
 
 
 def _refuse(journal, symbol, structure, signals, reason, iv_result=None):
@@ -84,6 +120,7 @@ def _refuse(journal, symbol, structure, signals, reason, iv_result=None):
 def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
     provider = YFinanceProvider()
     classifier = IVRankClassifier()
+    trend_analyzer = TrendAnalyzer()
     selector = ContractSelector()
     sizer = PositionSizer()
     journal = JournalLogger()
@@ -112,6 +149,13 @@ def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
     if iv_result:
         logger.info("IV Rank: %s", iv_result.rationale)
 
+    # --- Trend analysis (always run; used for momentum override) ---
+    logger.info("Running trend analysis for %s …", symbol)
+    price_df = provider.price_history(symbol, 300)
+    trend_result = trend_analyzer.analyze(symbol, price_df)
+    if trend_result:
+        logger.info("Trend: %s", trend_result.rationale)
+
     # --- Strategy guardrail (C2/C3) ---
     structure = "long_call" if direction == "bullish" else "long_put"
     try:
@@ -120,8 +164,8 @@ def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
         _refuse(journal, symbol, structure, [], str(exc))
         return
 
-    # --- Entry rules ---
-    allowed, reason = _check_entry_rules(symbol, direction, iv_result, events)
+    # --- Entry rules (with momentum override) ---
+    allowed, reason, risk_mult = _check_entry_rules(symbol, direction, iv_result, events, trend_result)
     if not allowed:
         signals = []
         if iv_result:
@@ -161,7 +205,7 @@ def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
         open_risk = broker.get_open_position_risk()
 
     try:
-        size = sizer.compute_size(contract, account_equity, open_risk)
+        size = sizer.compute_size(contract, account_equity, open_risk, risk_multiplier=risk_mult)
     except GuardrailViolation as exc:
         _refuse(journal, symbol, structure, [], str(exc), iv_result=iv_result)
         return
@@ -173,6 +217,14 @@ def scan(symbol: str, direction: str, dry_run: bool = False) -> None:
 
     # --- Build signals ---
     signals: list[Signal] = []
+    if trend_result:
+        signals.append(Signal(
+            name="trend",
+            value=trend_result.ret3m,
+            direction=direction,
+            strength=trend_result.signal.value,
+            rationale=trend_result.rationale,
+        ))
     if iv_result:
         signals.append(Signal(
             name="iv_rank",

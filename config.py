@@ -10,6 +10,15 @@ ALLOWED_ACTIONS = frozenset({"long_call", "long_put"})  # Phase 1 only; straddle
 IVR_LOW_THRESHOLD = 30     # below: cheap options, entry allowed
 IVR_HIGH_THRESHOLD = 50    # above: expensive, avoid naked longs
 
+# --- Momentum override (trend-following regime) ---
+# Allows entries above IVR_LOW_THRESHOLD when price trend is strong.
+# IVR MEDIUM (30-50) + trend STRONG/MODERATE → entry at 75% normal risk
+# IVR HIGH   (50-70) + trend STRONG only     → entry at 50% normal risk
+# IVR > 70                                   → refused regardless of trend
+IVR_MOMENTUM_OVERRIDE_MAX = 70    # hard ceiling; never buy above this IVR
+MOMENTUM_RISK_MULT_MEDIUM  = 0.75  # risk multiplier for MEDIUM IVR + good trend
+MOMENTUM_RISK_MULT_HIGH    = 0.50  # risk multiplier for HIGH IVR (≤70) + strong trend
+
 # --- Position sizing (C6) ---
 MAX_RISK_PER_TRADE_PCT = 2.0    # % of account equity; hard cap
 MAX_PORTFOLIO_HEAT_PCT = 20.0   # total open risk cap across all positions
