@@ -34,8 +34,8 @@ MIN_OPEN_INTEREST = 100
 MIN_VOLUME = 10
 
 # --- Preferred entry DTE range ---
-MIN_DTE_AT_ENTRY = 30
-MAX_DTE_AT_ENTRY = 90
+MIN_DTE_AT_ENTRY = 21
+MAX_DTE_AT_ENTRY = 48
 
 # --- Target delta for strike selection (OTM bias) ---
 TARGET_DELTA_CALL = 0.40   # slightly OTM call

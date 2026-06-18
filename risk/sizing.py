@@ -54,13 +54,13 @@ class PositionSizer:
         open_position_risk — total USD at risk in existing open positions
                               (used to check portfolio heat).
         """
-        if contract.ask <= 0:
+        if contract.effective_ask <= 0:
             raise GuardrailViolation(
-                f"Contract {contract.symbol} has ask price <= 0; cannot size."
+                f"Contract {contract.symbol} has no usable ask/last price; cannot size."
             )
 
         # C5: max loss per contract = ask price * 100 (one contract = 100 shares)
-        max_loss_per_contract = contract.ask * 100.0
+        max_loss_per_contract = contract.effective_ask * 100.0
 
         # C6: max risk per trade (reduced by risk_multiplier for elevated-IVR momentum entries)
         max_risk_dollars = account_equity * config.MAX_RISK_PER_TRADE_PCT / 100.0 * risk_multiplier

@@ -35,8 +35,15 @@ class OptionContract:
     vega: Optional[float] = None
 
     @property
+    def effective_ask(self) -> float:
+        """Ask price for sizing; falls back to last when yfinance returns stale 0 quotes."""
+        return self.ask if self.ask > 0 else self.last
+
+    @property
     def mid(self) -> float:
-        return (self.bid + self.ask) / 2.0
+        if self.bid > 0 and self.ask > 0:
+            return (self.bid + self.ask) / 2.0
+        return self.last
 
     @property
     def spread_pct(self) -> float:

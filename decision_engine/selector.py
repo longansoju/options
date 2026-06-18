@@ -23,14 +23,27 @@ class ContractSelector:
     """
 
     def _passes_liquidity(self, c: OptionContract) -> bool:
+        # Volume is the primary liquidity signal — always required
         if c.volume < config.MIN_VOLUME:
             return False
-        if c.open_interest < config.MIN_OPEN_INTEREST:
+
+        # yfinance often returns bid=0/ask=0 (stale end-of-day snapshot) even for
+        # actively traded contracts. When quotes are stale, fall back to `last` price
+        # and relax the spread check rather than discarding real liquidity.
+        stale_quotes = c.bid <= 0 or c.ask <= 0
+        if stale_quotes:
+            if c.last <= 0:
+                return False          # no price at all — truly untradeable
+            # Use last as a proxy; skip spread filter (can't compute it)
+        else:
+            if c.spread_pct > config.MAX_BID_ASK_SPREAD_PCT:
+                return False
+
+        # OI check: skip when yfinance returns 0 but volume is healthy
+        # (OI updates overnight; volume proves trading happened today)
+        if c.open_interest > 0 and c.open_interest < config.MIN_OPEN_INTEREST:
             return False
-        if c.spread_pct > config.MAX_BID_ASK_SPREAD_PCT:
-            return False
-        if c.bid <= 0 or c.ask <= 0:
-            return False
+
         return True
 
     def _score_strike(self, contract: OptionContract, spot: float, option_type: str) -> float:
