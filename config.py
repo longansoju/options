@@ -50,10 +50,20 @@ AI_STACK: dict[str, list[str]] = {
     "ai_storage": ["STX", "WDC"],
     # 800G/1.6T optical transceivers — GPU cluster interconnect plumbing
     "ai_optical": ["COHR"],
-    # GaN power ICs for high-density data center PSUs
-    "ai_power": ["NVTS"],
+    # GaN power ICs for high-density data center PSUs; MPWR for GPU board voltage regs
+    "ai_power": ["NVTS", "MPWR"],
     # Independent GPU cloud (Nebius Group) — pure-play AI infra
     "ai_cloud_infra": ["NBIS"],
+    # Ethernet switching for GPU-to-GPU traffic in AI clusters
+    "ai_networking": ["ANET", "CRDO"],
+    # GPU rack servers shipped to hyperscalers; AI server backlogs
+    "ai_servers": ["SMCI", "DELL"],
+    # Liquid cooling + power mgmt for high-density GPU racks
+    "ai_datacenter_infra": ["VRT"],
+    # Manufactures every leading AI chip; EUV gatekeeper
+    "ai_chip_supply_chain": ["TSM", "ASML"],
+    # Nuclear/gas baseload contracted directly by hyperscalers for AI power demand
+    "ai_power_generation": ["CEG", "VST"],
 }
 
 # Flat watchlist: broad market anchors + full AI stack
