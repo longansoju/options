@@ -20,7 +20,7 @@ MOMENTUM_RISK_MULT_MEDIUM  = 0.75  # risk multiplier for MEDIUM IVR + good trend
 MOMENTUM_RISK_MULT_HIGH    = 0.50  # risk multiplier for HIGH IVR (≤70) + strong trend
 
 # --- Position sizing (C6) ---
-MAX_RISK_PER_TRADE_PCT = 2.0    # % of account equity; hard cap
+MAX_RISK_PER_TRADE_PCT = 3.0    # % of account equity; hard cap
 MAX_PORTFOLIO_HEAT_PCT = 20.0   # total open risk cap across all positions
 
 # --- Exit guardrails (section 4.4) ---
