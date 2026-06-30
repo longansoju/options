@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import sqlite3
+import time
 from datetime import date, timedelta
 from typing import List, Optional
 
@@ -28,6 +29,30 @@ def _parse_occ_date(occ_symbol: str) -> date:
         raise ValueError(f"Cannot parse OCC symbol: {occ_symbol}")
     yy, mm, dd = m.group(1)[:2], m.group(1)[2:4], m.group(1)[4:6]
     return date(2000 + int(yy), int(mm), int(dd))
+
+
+def _yf_fetch(call, symbol: str, retries: int | None = None, delay: float | None = None, backoff: float | None = None):
+    """Wrap a yfinance call with pre-call delay and exponential-backoff retry on empty/error."""
+    retries = retries if retries is not None else config.YF_MAX_RETRIES
+    delay   = delay   if delay   is not None else config.YF_INTER_CALL_DELAY
+    backoff = backoff if backoff is not None else config.YF_RETRY_BACKOFF
+    for attempt in range(retries):
+        time.sleep(delay)
+        try:
+            result = call()
+            if result is not None and (not hasattr(result, "empty") or not result.empty):
+                return result
+        except Exception as exc:
+            logger.warning("%s: yfinance call failed (attempt %d/%d): %s", symbol, attempt + 1, retries, exc)
+        if attempt < retries - 1:
+            wait = delay * (backoff ** attempt)
+            logger.warning(
+                "%s: empty/error response (attempt %d/%d), retrying in %.1fs…",
+                symbol, attempt + 1, retries, wait,
+            )
+            time.sleep(wait)
+    logger.error("%s: all %d yfinance attempts exhausted", symbol, retries)
+    return None
 
 
 class YFinanceProvider:
@@ -116,8 +141,8 @@ class YFinanceProvider:
 
     def options_chain(self, symbol: str) -> Chain:
         ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="1d")
-        spot = float(hist["Close"].iloc[-1]) if not hist.empty else 0.0
+        hist = _yf_fetch(lambda: ticker.history(period="1d"), symbol)
+        spot = float(hist["Close"].iloc[-1]) if hist is not None and not hist.empty else 0.0
 
         expirations = ticker.options  # tuple of date strings
         contracts: List[OptionContract] = []
@@ -127,10 +152,9 @@ class YFinanceProvider:
             dte = (exp_date - date.today()).days
             if dte < config.MIN_DTE_AT_ENTRY or dte > config.MAX_DTE_AT_ENTRY:
                 continue
-            try:
-                chain = ticker.option_chain(exp_str)
-            except Exception as exc:
-                logger.warning("Failed fetching chain for %s %s: %s", symbol, exp_str, exc)
+            chain = _yf_fetch(lambda e=exp_str: ticker.option_chain(e), symbol)
+            if chain is None:
+                logger.warning("Failed fetching chain for %s %s after retries", symbol, exp_str)
                 continue
 
             for df, opt_type in [(chain.calls, "call"), (chain.puts, "put")]:
@@ -170,8 +194,8 @@ class YFinanceProvider:
     def price_history(self, symbol: str, lookback_days: int) -> pd.DataFrame:
         ticker = yf.Ticker(symbol)
         period_str = f"{lookback_days + 5}d"
-        df = ticker.history(period=period_str)
-        return df
+        df = _yf_fetch(lambda: ticker.history(period=period_str), symbol)
+        return df if df is not None else pd.DataFrame()
 
     def iv_history(self, symbol: str, lookback_days: int) -> IVSeries:
         dates, vals = self._load_iv_history(symbol, lookback_days)

@@ -96,5 +96,10 @@ DIVERSIFICATION: dict[str, list[str]] = {
 IV_RANK_MIN_HISTORY_DAYS = 30   # minimum cached IV days before using real IVR
 IV_RANK_LOOKBACK_DAYS = 252     # ~52 trading weeks
 
+# --- Yahoo Finance rate-limit guard ---
+YF_INTER_CALL_DELAY = 1.5   # seconds between yfinance API calls during batch scans
+YF_MAX_RETRIES      = 3     # attempts per call before giving up
+YF_RETRY_BACKOFF    = 2.0   # exponential backoff multiplier (delays: 1.5s → 3s → 6s)
+
 # --- SQLite journal path ---
 JOURNAL_DB_PATH = "journal/trades.db"
