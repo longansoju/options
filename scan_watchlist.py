@@ -18,6 +18,7 @@ import config
 from analysis.iv_regime import IVRankClassifier, IVRegime
 from analysis.trend import TrendAnalyzer, TrendSignal
 from data_ingestion.yfinance_provider import YFinanceProvider
+from journal.research_log import ResearchLog
 
 import logging
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -149,10 +150,11 @@ def entry_score(iv_result, trend_result, direction="bullish") -> tuple[int, str]
     return base + adj, " ".join(flags)
 
 
-def scan_all(direction: str = "bullish"):
+def scan_all(direction: str = "bullish", log: bool = True):
     provider = YFinanceProvider()
     classifier = IVRankClassifier()
     analyzer = TrendAnalyzer()
+    rlog = ResearchLog() if log else None
 
     tickers = list(dict.fromkeys(
         config.WATCHLIST
@@ -216,6 +218,25 @@ def scan_all(direction: str = "bullish"):
         verdict, detail = regime_label(iv_result, trend_result, direction)
         print(fmt.format(sym, price, ivr + proxy, regime, trend, score_str, ret1m, ret3m, rsi, verdict + " | " + detail))
 
+        if rlog is not None:
+            es, es_flags = entry_score(iv_result, trend_result, direction)
+            try:
+                rlog.log_scan_row(
+                    "swing", sym, direction=direction,
+                    price=trend_result.price if trend_result else None,
+                    ivr=iv_result.iv_rank if iv_result else None,
+                    ivr_regime=iv_result.regime.value if iv_result else None,
+                    ivr_is_proxy=iv_result.is_proxy if iv_result else None,
+                    trend_signal=trend_result.signal.value if trend_result else None,
+                    trend_score=int(score_str) if score_str.isdigit() else None,
+                    rsi=trend_result.rsi if trend_result else None,
+                    ret1m=trend_result.ret1m if trend_result else None,
+                    ret3m=trend_result.ret3m if trend_result else None,
+                    entry_score=es, verdict=verdict, flags=es_flags,
+                )
+            except Exception as e:
+                logging.warning("scan_history log failed for %s: %s", sym, e)
+
         if verdict == "TRADE":
             trade_recs.append((sym, iv_result, trend_result))
         elif verdict == "OVERRIDE":
@@ -245,5 +266,6 @@ def scan_all(direction: str = "bullish"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--direction", default="bullish", choices=["bullish", "bearish"])
+    parser.add_argument("--no-log", action="store_true", help="skip writing snapshots to scan_history")
     args = parser.parse_args()
-    scan_all(args.direction)
+    scan_all(args.direction, log=not args.no_log)

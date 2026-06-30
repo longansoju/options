@@ -45,6 +45,7 @@ import pandas as pd
 import config
 from analysis.trend import TrendAnalyzer
 from data_ingestion.yfinance_provider import YFinanceProvider
+from journal.research_log import ResearchLog
 
 import logging
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -249,9 +250,10 @@ def _strike_ladder(row: MomentumRow, dte: int) -> list[tuple[str, float, float, 
     return ladder
 
 
-def scan(direction: Optional[str], dte_override: Optional[int], top: int):
+def scan(direction: Optional[str], dte_override: Optional[int], top: int, log: bool = True):
     provider = YFinanceProvider()
     analyzer = TrendAnalyzer()
+    rlog = ResearchLog() if log else None
     today = date.today()
 
     if dte_override:
@@ -279,6 +281,18 @@ def scan(direction: Optional[str], dte_override: Optional[int], top: int):
             logging.warning("%s: %s", sym, e)
 
     rows.sort(key=lambda r: -r.ignition)
+
+    if rlog is not None:
+        for r in rows:
+            try:
+                rlog.log_scan_row(
+                    "momentum", r.symbol, direction=r.direction,
+                    price=r.spot, rv=r.rv, vol_rank=r.vol_rank, atr_pct=r.atr_pct,
+                    ret5=r.ret5, vol_ratio=r.vol_ratio, rsi=r.rsi,
+                    ignition=r.ignition, verdict=r.direction, flags=r.why,
+                )
+            except Exception as e:
+                logging.warning("scan_history log failed for %s: %s", r.symbol, e)
 
     # ── ranked table ────────────────────────────────────────────────────────
     fmt = "{:<6} {:>8} {:>4} {:>6} {:>5} {:>6} {:>5} {:>5} {:>4}  {:>4}  {}"
@@ -320,5 +334,6 @@ if __name__ == "__main__":
     p.add_argument("--dte", type=int, default=None,
                    help="days to expiry; default = nearest Friday weekly")
     p.add_argument("--top", type=int, default=8, help="how many strike ladders to print")
+    p.add_argument("--no-log", action="store_true", help="skip writing snapshots to scan_history")
     args = p.parse_args()
-    scan(args.direction, args.dte, args.top)
+    scan(args.direction, args.dte, args.top, log=not args.no_log)
