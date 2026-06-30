@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 import sqlite3
 import time
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
 from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
 
 from .base import (
@@ -195,7 +196,69 @@ class YFinanceProvider:
         ticker = yf.Ticker(symbol)
         period_str = f"{lookback_days + 5}d"
         df = _yf_fetch(lambda: ticker.history(period=period_str), symbol)
-        return df if df is not None else pd.DataFrame()
+        if df is not None and not df.empty:
+            return df
+        # yfinance library parse failure — fall back to direct HTTP
+        return self._price_history_direct(symbol, lookback_days)
+
+    def _price_history_direct(self, symbol: str, lookback_days: int) -> pd.DataFrame:
+        """Fetch OHLCV directly from Yahoo Finance chart API, bypassing yfinance parsing."""
+        time.sleep(config.YF_INTER_CALL_DELAY)
+        total_days = lookback_days + 5
+        # Choose an appropriate interval range string
+        if total_days <= 60:
+            range_str = "3mo"
+        elif total_days <= 180:
+            range_str = "6mo"
+        elif total_days <= 365:
+            range_str = "1y"
+        else:
+            range_str = "2y"
+
+        url = (
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+            f"?interval=1d&range={range_str}"
+        )
+        headers = {"User-Agent": "Mozilla/5.0"}
+        for attempt in range(config.YF_MAX_RETRIES):
+            try:
+                resp = requests.get(url, headers=headers, timeout=15)
+                if resp.status_code == 429:
+                    wait = config.YF_INTER_CALL_DELAY * (config.YF_RETRY_BACKOFF ** attempt)
+                    logger.warning("%s: HTTP 429 rate-limited (attempt %d), retrying in %.1fs", symbol, attempt + 1, wait)
+                    time.sleep(wait)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                result = data.get("chart", {}).get("result", [])
+                if not result:
+                    logger.warning("%s: empty chart result from direct API", symbol)
+                    return pd.DataFrame()
+
+                r = result[0]
+                timestamps = r.get("timestamp", [])
+                quote = r["indicators"]["quote"][0]
+                adjclose_list = r["indicators"].get("adjclose", [{}])[0].get("adjclose", quote.get("close", []))
+
+                df = pd.DataFrame({
+                    "Open":     quote.get("open", []),
+                    "High":     quote.get("high", []),
+                    "Low":      quote.get("low", []),
+                    "Close":    adjclose_list,
+                    "Volume":   quote.get("volume", []),
+                }, index=pd.to_datetime(timestamps, unit="s", utc=True).tz_convert("America/New_York"))
+                df.index.name = "Date"
+                df = df.dropna(subset=["Close"])
+                # Trim to requested lookback
+                cutoff = pd.Timestamp.now(tz="America/New_York") - pd.Timedelta(days=lookback_days)
+                df = df[df.index >= cutoff]
+                logger.info("%s: fetched %d bars via direct HTTP", symbol, len(df))
+                return df
+            except Exception as exc:
+                logger.warning("%s: direct HTTP attempt %d failed: %s", symbol, attempt + 1, exc)
+                if attempt < config.YF_MAX_RETRIES - 1:
+                    time.sleep(config.YF_INTER_CALL_DELAY * (config.YF_RETRY_BACKOFF ** attempt))
+        return pd.DataFrame()
 
     def iv_history(self, symbol: str, lookback_days: int) -> IVSeries:
         dates, vals = self._load_iv_history(symbol, lookback_days)
