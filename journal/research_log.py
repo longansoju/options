@@ -215,6 +215,44 @@ class ResearchLog:
         con.close()
         return True
 
+    def export_recommendations(self, path: str = "data/recommendations.csv") -> int:
+        """Dump the book to a committed CSV (durable across ephemeral containers)."""
+        import csv
+        import os
+        con = self._con()
+        rows = con.execute("SELECT * FROM recommendations ORDER BY created_date, id").fetchall()
+        con.close()
+        if not rows:
+            return 0
+        cols = [c for c in rows[0].keys() if c != "id"]
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=cols)
+            w.writeheader()
+            for r in rows:
+                w.writerow({c: r[c] for c in cols})
+        return len(rows)
+
+    def import_recommendations(self, path: str = "data/recommendations.csv") -> int:
+        """Restore the book from the committed CSV into the DB (idempotent)."""
+        import csv
+        import os
+        if not os.path.exists(path):
+            return 0
+        con = self._con()
+        n = 0
+        with open(path) as f:
+            for row in csv.DictReader(f):
+                cols = list(row.keys())
+                vals = [row[c] if row[c] not in ("", None) else None for c in cols]
+                con.execute(
+                    f"INSERT OR REPLACE INTO recommendations ({','.join(cols)}) "
+                    f"VALUES ({','.join(['?'] * len(cols))})", vals)
+                n += 1
+        con.commit()
+        con.close()
+        return n
+
     def recommendations(self, *, status: str | None = "open"):
         con = self._con()
         if status:

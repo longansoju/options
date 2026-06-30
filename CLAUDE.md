@@ -50,6 +50,13 @@ in/out of the money, thesis-still-valid?). Open positions to track are kept in
 the `recommendations` / `positions` journal (see `journal/`). Never give new
 picks without first re-checking the old ones.
 
+**Book persistence.** The journal DB is gitignored and ephemeral; the durable book
+is `data/recommendations.csv`. On session start, restore it:
+`python -c "from journal.research_log import ResearchLog as R; R().import_recommendations()"`.
+After ANY book change (open/close a trade), re-export and commit it:
+`python -c "from journal.research_log import ResearchLog as R; R().export_recommendations()"`.
+The daily cron must NOT export this file (its DB is fresh and would clobber the book).
+
 ## Trading lessons (do not repeat)
 
 ### A momentum-scan candidate is NOT an entry signal
