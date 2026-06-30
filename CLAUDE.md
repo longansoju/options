@@ -12,6 +12,26 @@ proxy, so all dollar figures are **ballpark, not quotes**.
 - `scan_momentum.py` — weekly/day-trade mode, nearest-Friday weekly (~4 DTE),
   IVR ignored, buy strength (breakouts/breakdowns). `--dte`, `--direction`, `--top`.
 
+## Paper-trading account (operating mode, as of 2026-06-30)
+
+Claude runs a **paper book** to build a labeled track record. The user has paused
+real-money trading until the record proves the decisions out. Rules:
+
+- **Quality over quantity.** Take only setups Claude is genuinely confident in (the
+  highest-conviction the system surfaces, with entry discipline satisfied). NEVER
+  force trades to hit a target count — forcing corrupts the experiment and is itself
+  a failure mode.
+- **Entry discipline applies** (see momentum lesson): confirmed trigger only, flag
+  mean-reversion risk, size tiny, 1σ strike on weeklies.
+- **Honest pricing caveat.** No live chain — paper fills are Black-Scholes at the
+  realized-vol proxy, with NO slippage or spread. A paper edge must be robust enough
+  to survive real friction; paper validates direction/timing, not exact premium.
+- **Book separation.** `recommendations.book` = `real` (user's actual fills) |
+  `paper` (Claude's trades) | `watch` (pending-trigger candidates).
+- **Exit rules.** Swing: +75% target / −50% stop / exit by 21 DTE. Momentum: +50%
+  target / −50% stop / exit by 2 DTE or end of day. Every exit → a labeled outcome.
+- **Track record:** `ResearchLog.paper_stats()` and `review_positions.py`.
+
 ## Output format (always)
 
 Every recommendation must (1) state which **strategy** it belongs to — SWING

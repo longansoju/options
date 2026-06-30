@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS recommendations (
     entry_premium     REAL,                 -- per-contract; actual if held, else est
     thesis            TEXT,
     status            TEXT NOT NULL DEFAULT 'open',  -- open|closed|expired|skipped
+    book              TEXT NOT NULL DEFAULT 'watch',  -- real | paper | watch
     exit_date         TEXT,
     exit_ref_price    REAL,
     exit_premium      REAL,
@@ -91,6 +92,10 @@ class ResearchLog:
         self._db = db_path
         con = sqlite3.connect(db_path)
         con.executescript(_SCHEMA)
+        # migration for DBs created before the `book` column existed
+        cols = [r[1] for r in con.execute("PRAGMA table_info(recommendations)").fetchall()]
+        if "book" not in cols:
+            con.execute("ALTER TABLE recommendations ADD COLUMN book TEXT NOT NULL DEFAULT 'watch'")
         con.commit()
         con.close()
 
@@ -146,21 +151,43 @@ class ResearchLog:
     def add_recommendation(self, symbol: str, strategy: str, direction: str,
                            strike: float, expiry: str, *, entry_ref_price=None,
                            entry_premium=None, thesis=None, created_date=None,
-                           status="open") -> str:
+                           status="open", book="watch") -> str:
         created_date = created_date or date.today().isoformat()
         code = occ_code(symbol, expiry, direction, strike)
         con = self._con()
         con.execute(
             """INSERT OR REPLACE INTO recommendations
                (created_date, symbol, strategy, direction, strike, expiry, occ_code,
-                entry_ref_price, entry_premium, thesis, status)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                entry_ref_price, entry_premium, thesis, status, book)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (created_date, symbol.upper(), strategy, direction.lower(), strike,
-             expiry, code, entry_ref_price, entry_premium, thesis, status),
+             expiry, code, entry_ref_price, entry_premium, thesis, status, book),
         )
         con.commit()
         con.close()
         return code
+
+    def paper_stats(self) -> dict:
+        """Track-record summary over CLOSED paper trades."""
+        con = self._con()
+        rows = con.execute(
+            "SELECT entry_premium, exit_premium, pnl_pct FROM recommendations "
+            "WHERE book='paper' AND status='closed' AND exit_premium IS NOT NULL "
+            "AND entry_premium IS NOT NULL"
+        ).fetchall()
+        con.close()
+        n = len(rows)
+        if not n:
+            return {"closed": 0}
+        wins = sum(1 for r in rows if (r["pnl_pct"] or 0) > 0)
+        cost = sum(r["entry_premium"] for r in rows)
+        proceeds = sum(r["exit_premium"] for r in rows)
+        return {
+            "closed": n, "wins": wins, "win_rate": wins / n * 100,
+            "avg_pnl_pct": sum(r["pnl_pct"] for r in rows) / n,
+            "cost": cost, "proceeds": proceeds, "net": proceeds - cost,
+            "net_pct": (proceeds / cost - 1) * 100 if cost else 0,
+        }
 
     def close_recommendation(self, occ: str, *, exit_premium=None, exit_ref_price=None,
                              status="closed", notes=None, exit_date=None) -> bool:
