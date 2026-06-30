@@ -23,7 +23,7 @@ import logging
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 
 
-def regime_label(iv_result, trend_result):
+def regime_label(iv_result, trend_result, direction="bullish"):
     """Return TRADE / OVERRIDE / WATCH / SKIP and reason string."""
     if iv_result is None:
         return "NO DATA", "-"
@@ -33,14 +33,27 @@ def regime_label(iv_result, trend_result):
     if ivr > config.IVR_MOMENTUM_OVERRIDE_MAX:
         return "SKIP", f"IVR={ivr:.0f} (>70 ceiling)"
 
+    if direction == "bearish":
+        # For puts: LOW IVR = cheap, always trade; MEDIUM/HIGH need confirmed downtrend
+        if iv_result.regime == IVRegime.LOW:
+            return "TRADE", f"IVR={ivr:.0f} LOW | trend={sig.value if sig else '?'}"
+        if iv_result.regime == IVRegime.MEDIUM:
+            if sig in (TrendSignal.WEAK, TrendSignal.NEUTRAL):
+                return "OVERRIDE", f"IVR={ivr:.0f} MED | trend={sig.value} → 75% size"
+            return "WATCH", f"IVR={ivr:.0f} MED | trend={sig.value if sig else '?'} (uptrend)"
+        if iv_result.regime == IVRegime.HIGH:
+            if sig == TrendSignal.WEAK:
+                return "OVERRIDE", f"IVR={ivr:.0f} HIGH | trend=WEAK → 50% size"
+            return "SKIP", f"IVR={ivr:.0f} HIGH | need WEAK trend for puts"
+        return "WATCH", "-"
+
+    # bullish
     if iv_result.regime == IVRegime.LOW:
         return "TRADE", f"IVR={ivr:.0f} LOW | trend={sig.value if sig else '?'}"
-
     if iv_result.regime == IVRegime.MEDIUM:
         if sig in (TrendSignal.STRONG, TrendSignal.MODERATE):
             return "OVERRIDE", f"IVR={ivr:.0f} MED | trend={sig.value} → 75% size"
         return "WATCH", f"IVR={ivr:.0f} MED | trend={sig.value if sig else '?'} (weak)"
-
     if iv_result.regime == IVRegime.HIGH:
         if sig == TrendSignal.STRONG:
             return "OVERRIDE", f"IVR={ivr:.0f} HIGH | trend=STRONG → 50% size"
@@ -49,51 +62,81 @@ def regime_label(iv_result, trend_result):
     return "WATCH", "-"
 
 
-def entry_score(iv_result, trend_result) -> tuple[int, str]:
+def entry_score(iv_result, trend_result, direction="bullish") -> tuple[int, str]:
     """
     Timing-adjusted entry score for ranking TRADE/OVERRIDE candidates.
 
-    Starts from the trend score (signal quality) then adjusts for:
-      +2  near_hl=True  — price is at the HL entry zone (dip-buy opportunity)
-      +1  RSI < 55      — momentum reset, room to run
-      -1  RSI 65–74     — extended but not yet overbought
-      -2  RSI ≥ 75      — overbought, vol/premium risk high
-      -1  1M return > 25% — surge already extended; chasing risk
-      -1  IVR MEDIUM    — paying somewhat elevated premium (vs LOW)
-      -2  IVR HIGH      — paying expensive premium at 50% size
+    Bullish adjustments (base = raw trend score):
+      +2  near_hl        — at HL dip-buy zone
+      +1  RSI < 55       — momentum reset
+      -1  RSI 65–74      — extended
+      -2  RSI ≥ 75       — overbought
+      -1  1M ret > 25%   — chasing surge
 
-    Lower IVR is a better entry so it REDUCES the penalty.
-    Returns (score, flags_string).
+    Bearish adjustments (base = 14 - raw trend score, inverts bullish bias):
+      +2  near_lh        — price near last swing HIGH (overhead resistance)
+      +1  RSI > 65       — momentum extended, mean-reversion setup
+      -1  RSI < 40       — oversold, put premium elevated / bounce risk
+      -1  1M ret < -25%  — already crashed, chasing the drop
+
+    Both directions:
+      -1  IVR MEDIUM     — elevated premium cost
+      -2  IVR HIGH       — expensive premium at 50% size
     """
     if trend_result is None:
         return 0, ""
 
     try:
-        base = int(trend_result.rationale.split("score=")[1].split("/")[0])
+        base_bullish = int(trend_result.rationale.split("score=")[1].split("/")[0])
     except (IndexError, ValueError):
-        base = 0
+        base_bullish = 0
 
     flags = []
     adj = 0
 
-    if getattr(trend_result, "near_hl", False):
-        adj += 2
-        flags.append("HL-zone+2")
+    if direction == "bearish":
+        # Invert: weak trend score = good for puts
+        base = 14 - base_bullish
 
-    rsi = trend_result.rsi
-    if rsi < 55:
-        adj += 1
-        flags.append("RSI-reset+1")
-    elif rsi >= 75:
-        adj -= 2
-        flags.append("RSI-OB-2")
-    elif rsi >= 65:
-        adj -= 1
-        flags.append("RSI-ext-1")
+        rsi = trend_result.rsi
+        if rsi > 65:
+            adj += 1
+            flags.append("RSI-ext+1")
+        elif rsi < 40:
+            adj -= 1
+            flags.append("RSI-OS-1")
 
-    if trend_result.ret1m > 25:
-        adj -= 1
-        flags.append("1M-chase-1")
+        if trend_result.ret1m < -25:
+            adj -= 1
+            flags.append("1M-crash-1")
+
+        # near last swing HIGH = overhead resistance = good put entry
+        structure = getattr(trend_result, "structure", "")
+        if structure in ("weakening", "downtrend"):
+            adj += 1
+            flags.append("struct-down+1")
+
+    else:
+        base = base_bullish
+
+        if getattr(trend_result, "near_hl", False):
+            adj += 2
+            flags.append("HL-zone+2")
+
+        rsi = trend_result.rsi
+        if rsi < 55:
+            adj += 1
+            flags.append("RSI-reset+1")
+        elif rsi >= 75:
+            adj -= 2
+            flags.append("RSI-OB-2")
+        elif rsi >= 65:
+            adj -= 1
+            flags.append("RSI-ext-1")
+
+        if trend_result.ret1m > 25:
+            adj -= 1
+            flags.append("1M-chase-1")
 
     if iv_result is not None:
         if iv_result.regime == IVRegime.MEDIUM:
@@ -142,8 +185,8 @@ def scan_all(direction: str = "bullish"):
 
     def sort_key(r):
         sym, iv, tr, err = r
-        v, _ = regime_label(iv, tr)
-        es, _ = entry_score(iv, tr) if v in ("TRADE", "OVERRIDE") else (0, "")
+        v, _ = regime_label(iv, tr, direction)
+        es, _ = entry_score(iv, tr, direction) if v in ("TRADE", "OVERRIDE") else (0, "")
         return (verdict_order.get(v, 5), -es)
 
     results.sort(key=sort_key)
@@ -170,7 +213,7 @@ def scan_all(direction: str = "bullish"):
         else:
             score_str = "-"
 
-        verdict, detail = regime_label(iv_result, trend_result)
+        verdict, detail = regime_label(iv_result, trend_result, direction)
         print(fmt.format(sym, price, ivr + proxy, regime, trend, score_str, ret1m, ret3m, rsi, verdict + " | " + detail))
 
         if verdict == "TRADE":
@@ -186,7 +229,7 @@ def scan_all(direction: str = "bullish"):
         print(f"  {'Sym':<6} {'Price':>8}  {'IVR':<4}  {'Trend':<8}  {'Entry':>5}  {'1M':>7}  {'3M':>7}  {'RSI':>4}  Timing flags")
         print(f"  {'-'*6} {'-'*8}  {'-'*4}  {'-'*8}  {'-'*5}  {'-'*7}  {'-'*7}  {'-'*4}  {'-'*30}")
         all_recs = trade_recs + override_recs
-        all_recs.sort(key=lambda r: -entry_score(r[1], r[2])[0])
+        all_recs.sort(key=lambda r: -entry_score(r[1], r[2], direction)[0])
         for sym, iv, tr in all_recs:
             ivr_v  = f"{iv.iv_rank:.0f}" if iv else "?"
             sig_v  = tr.signal.value if tr else "?"
@@ -194,8 +237,8 @@ def scan_all(direction: str = "bullish"):
             r3     = f"{tr.ret3m:+.1f}%" if tr else ""
             px     = f"${tr.price:.2f}" if tr else ""
             rsi_v  = f"{tr.rsi:.0f}" if tr else ""
-            es, flags = entry_score(iv, tr)
-            hl_tag = " ← HL zone" if getattr(tr, "near_hl", False) else ""
+            es, flags = entry_score(iv, tr, direction)
+            hl_tag = " ← HL zone" if (direction == "bullish" and getattr(tr, "near_hl", False)) else ""
             print(f"  {sym:<6} {px:>8}  IVR={ivr_v:<3}  {sig_v:<8}  {es:>5}  {r1:>7}  {r3:>7}  {rsi_v:>4}  {flags}{hl_tag}")
 
 
