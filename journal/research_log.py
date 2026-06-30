@@ -69,7 +69,10 @@ CREATE TABLE IF NOT EXISTS recommendations (
     thesis            TEXT,
     status            TEXT NOT NULL DEFAULT 'open',  -- open|closed|expired|skipped
     book              TEXT NOT NULL DEFAULT 'watch',  -- real | paper | watch
+    entry_ts          TEXT,                           -- precise ISO time the entry was booked
+    price_source      TEXT NOT NULL DEFAULT 'estimate',  -- estimate | real (backfill target)
     exit_date         TEXT,
+    exit_ts           TEXT,                           -- precise ISO time of exit
     exit_ref_price    REAL,
     exit_premium      REAL,
     pnl_pct           REAL,
@@ -92,10 +95,16 @@ class ResearchLog:
         self._db = db_path
         con = sqlite3.connect(db_path)
         con.executescript(_SCHEMA)
-        # migration for DBs created before the `book` column existed
+        # migrations for columns added after a DB was first created
         cols = [r[1] for r in con.execute("PRAGMA table_info(recommendations)").fetchall()]
-        if "book" not in cols:
-            con.execute("ALTER TABLE recommendations ADD COLUMN book TEXT NOT NULL DEFAULT 'watch'")
+        for name, ddl in (
+            ("book", "TEXT NOT NULL DEFAULT 'watch'"),
+            ("entry_ts", "TEXT"),
+            ("price_source", "TEXT NOT NULL DEFAULT 'estimate'"),
+            ("exit_ts", "TEXT"),
+        ):
+            if name not in cols:
+                con.execute(f"ALTER TABLE recommendations ADD COLUMN {name} {ddl}")
         con.commit()
         con.close()
 
@@ -151,17 +160,20 @@ class ResearchLog:
     def add_recommendation(self, symbol: str, strategy: str, direction: str,
                            strike: float, expiry: str, *, entry_ref_price=None,
                            entry_premium=None, thesis=None, created_date=None,
-                           status="open", book="watch") -> str:
+                           status="open", book="watch", price_source="estimate",
+                           entry_ts=None) -> str:
         created_date = created_date or date.today().isoformat()
+        entry_ts = entry_ts or datetime.now().isoformat(timespec="seconds")
         code = occ_code(symbol, expiry, direction, strike)
         con = self._con()
         con.execute(
             """INSERT OR REPLACE INTO recommendations
                (created_date, symbol, strategy, direction, strike, expiry, occ_code,
-                entry_ref_price, entry_premium, thesis, status, book)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                entry_ref_price, entry_premium, thesis, status, book, entry_ts, price_source)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (created_date, symbol.upper(), strategy, direction.lower(), strike,
-             expiry, code, entry_ref_price, entry_premium, thesis, status, book),
+             expiry, code, entry_ref_price, entry_premium, thesis, status, book,
+             entry_ts, price_source),
         )
         con.commit()
         con.close()
@@ -192,6 +204,7 @@ class ResearchLog:
     def close_recommendation(self, occ: str, *, exit_premium=None, exit_ref_price=None,
                              status="closed", notes=None, exit_date=None) -> bool:
         exit_date = exit_date or date.today().isoformat()
+        exit_ts = datetime.now().isoformat(timespec="seconds")
         con = self._con()
         row = con.execute(
             "SELECT entry_premium FROM recommendations WHERE occ_code=? AND status='open' "
@@ -206,10 +219,10 @@ class ResearchLog:
             pnl = (exit_premium - ep) / ep * 100
         con.execute(
             """UPDATE recommendations
-               SET status=?, exit_date=?, exit_ref_price=?, exit_premium=?, pnl_pct=?,
+               SET status=?, exit_date=?, exit_ts=?, exit_ref_price=?, exit_premium=?, pnl_pct=?,
                    notes=COALESCE(?, notes)
                WHERE occ_code=? AND status='open'""",
-            (status, exit_date, exit_ref_price, exit_premium, pnl, notes, occ),
+            (status, exit_date, exit_ts, exit_ref_price, exit_premium, pnl, notes, occ),
         )
         con.commit()
         con.close()

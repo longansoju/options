@@ -1,9 +1,9 @@
-created_date,symbol,strategy,direction,strike,expiry,occ_code,entry_ref_price,entry_premium,thesis,status,exit_date,exit_ref_price,exit_premium,pnl_pct,notes,book
-2026-06-29,BKNG,momentum,call,192.5,2026-07-03,BKNG260703C00192500,183.0,40.0,"[HELD - entered 2026-06-29, fill $40] 20d-high breakout +9% 5d on 1.3x volume",closed,2026-06-30,,20.0,-50.0,breakout faded; salvaged better than est,real
-2026-06-29,AAPL,momentum,put,270.0,2026-07-03,AAPL260703P00270000,281.57,31.0,"[HELD - entered 2026-06-29, fill $31] 20d-low area, 1.4x volume",closed,2026-06-30,,9.0,-70.96774193548387,"reverted - bought put into oversold low, bounced",real
-2026-06-30,MSFT,swing,call,400.0,2026-07-17,MSFT260717C00400000,,470.0,"[HELD] entered $470 — REVIEW SAYS CLOSE: weak downtrend, IVR 88, 18-DTE theta bleed",open,,,,,,real
-2026-06-30,VST,swing,call,190.0,2026-07-17,VST260717C00190000,,270.0,"[HELD] entered $270 — needs +16% in 18d, low probability",open,,,,,,real
-2026-06-30,AXP,swing,put,300.0,2026-08-07,AXP260807P00300000,340.4,,"RSI 79 overbought, neutral trend — mean-reversion put",open,,,,,,watch
-2026-06-30,CEG,swing,put,230.0,2026-08-07,CEG260807P00230000,259.3,,"IVR 16 LOW, clean downtrend — cheapest puts",open,,,,,,watch
-2026-06-30,NUE,momentum,put,217.5,2026-07-03,NUE260703P00217500,228.58,,20d-low breakdown on 1.4x volume,open,,,,,,watch
-2026-06-30,MAR,swing,call,420.0,2026-08-07,MAR260807C00420000,368.59,55.0,"[PAPER] HL dip-zone, IVR~22 LOW, RSI reset; swing dip-buy. entry est $55 (spot 368.59, RV 23%). exit +75%/-50% or by 21 DTE",open,,,,,,paper
+created_date,symbol,strategy,direction,strike,expiry,occ_code,entry_ref_price,entry_premium,thesis,status,exit_date,exit_ref_price,exit_premium,pnl_pct,notes,book,entry_ts,price_source,exit_ts
+2026-06-29,BKNG,momentum,call,192.5,2026-07-03,BKNG260703C00192500,183.0,40.0,"[HELD - entered 2026-06-29, fill $40] 20d-high breakout +9% 5d on 1.3x volume",closed,2026-06-30,,20.0,-50.0,breakout faded; salvaged better than est,real,2026-06-29T00:00:00,real,2026-06-30T00:00:00
+2026-06-29,AAPL,momentum,put,270.0,2026-07-03,AAPL260703P00270000,281.57,31.0,"[HELD - entered 2026-06-29, fill $31] 20d-low area, 1.4x volume",closed,2026-06-30,,9.0,-70.96774193548387,"reverted - bought put into oversold low, bounced",real,2026-06-29T00:00:00,real,2026-06-30T00:00:00
+2026-06-30,MSFT,swing,call,400.0,2026-07-17,MSFT260717C00400000,,470.0,"[HELD] entered $470 — REVIEW SAYS CLOSE: weak downtrend, IVR 88, 18-DTE theta bleed",open,,,,,,real,2026-06-30T00:00:00,real,
+2026-06-30,VST,swing,call,190.0,2026-07-17,VST260717C00190000,,270.0,"[HELD] entered $270 — needs +16% in 18d, low probability",open,,,,,,real,2026-06-30T00:00:00,real,
+2026-06-30,AXP,swing,put,300.0,2026-08-07,AXP260807P00300000,340.4,,"RSI 79 overbought, neutral trend — mean-reversion put",open,,,,,,watch,2026-06-30T00:00:00,estimate,
+2026-06-30,CEG,swing,put,230.0,2026-08-07,CEG260807P00230000,259.3,,"IVR 16 LOW, clean downtrend — cheapest puts",open,,,,,,watch,2026-06-30T00:00:00,estimate,
+2026-06-30,NUE,momentum,put,217.5,2026-07-03,NUE260703P00217500,228.58,,20d-low breakdown on 1.4x volume,open,,,,,,watch,2026-06-30T00:00:00,estimate,
+2026-06-30,MAR,swing,call,420.0,2026-08-07,MAR260807C00420000,368.59,55.0,"[PAPER] HL dip-zone, IVR~22 LOW, RSI reset; swing dip-buy. entry est $55 (spot 368.59, RV 23%). exit +75%/-50% or by 21 DTE",open,,,,,,paper,2026-06-30T00:00:00,estimate,
