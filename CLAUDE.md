@@ -54,6 +54,26 @@ already decayed 8→6 and its 5-day return improved -6%→-4.3% (momentum rollin
 4. Short-dated (≤7 DTE) options bleed theta hard and must be confirmed + exited
    fast + sized tiny. Default to the 1σ strike, never the 2σ "lotto" strike.
 
+### Output discipline — never let a scan line become a verb
+**What went wrong (2026-06-30):** off the momentum scan I wrote "the only two I'd
+act on are BKNG and NUE… both broke their level with volume, neither is
+over-extended." The user entered AAPL P270 ($31) and BKNG C192.5 ($40) on that
+framing; both reverted to ~-75% at 3 DTE. Three errors in that one sentence:
+- "broke their level" — they were *sitting at* the 20d high/low, not broken-and-held.
+  "At the level + above-average volume" is NOT a confirmed trigger.
+- "neither over-extended" — BKNG was RSI 70 going into a breakout (extended).
+- AAPL (sitting at a low, oversold-leaning RSI, ignition only 4) was a mean-reversion
+  *risk* but got grouped with the green-lit names.
+
+**The rule going forward:**
+5. Never use endorsing verbs — "I'd act on / recommend / cleanest entry / buy" — for
+   anything off a daily scan. Daily-scan output gets ONE label: **watch — pending
+   trigger.** An entry is only called an entry once the level breaks *and holds* on
+   the live tape (or the 10am confirmation scan shows it holding).
+6. "At the level + volume" ≠ "broke and held." State which one it actually is.
+7. A short-dated put into an oversold low (or call into RSI ≥70) is flagged as
+   mean-reversion risk explicitly — never listed as "confirmed."
+
 ### Violent-vol names price badly for weekly premium buying
 Names with extreme realized vol (e.g. MRVL, WDC, SMCI, STX at RV 90-160%) make
 weekly OTM strikes near-worthless coin flips and ATM strikes very expensive — poor
