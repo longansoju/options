@@ -22,6 +22,14 @@ contract code**, not just "BKNG C192.5".
 OCC format: `{ROOT}{YYMMDD}{C|P}{strike×1000, zero-padded to 8 digits}`.
 Example: BKNG $192.50 call expiring 2026-07-03 → `BKNG260703C00192500`.
 
+## Session routine (always)
+
+Before giving new analysis, **review the standing positions / prior
+recommendations** and report how each has moved (fresh price, IVR, trend, DTE,
+in/out of the money, thesis-still-valid?). Open positions to track are kept in
+the `recommendations` / `positions` journal (see `journal/`). Never give new
+picks without first re-checking the old ones.
+
 ## Trading lessons (do not repeat)
 
 ### A momentum-scan candidate is NOT an entry signal
