@@ -1,0 +1,54 @@
+name: Daily scan snapshot
+
+# Captures an end-of-day snapshot of every watchlist name into
+# data/scan_history.csv — the durable dataset for Phase 2 calibration.
+#
+# IMPORTANT: GitHub only fires `schedule` triggers from the repo's DEFAULT branch.
+# Until this file is on the default branch, the cron won't run on its own — use the
+# "Run workflow" button (workflow_dispatch) from the Actions tab to trigger it.
+
+on:
+  schedule:
+    # 21:15 UTC = 4:15pm EST / 5:15pm EDT, Mon-Fri — shortly after US close.
+    # GitHub cron is UTC and does NOT follow DST, so this drifts ~1h across the year;
+    # either side is still after the 4pm ET close, which is what matters.
+    - cron: "15 21 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scans (auto-logs to scan_history)
+        run: |
+          python scan_watchlist.py --direction bullish || true
+          python scan_watchlist.py --direction bearish || true
+          python scan_momentum.py || true
+
+      - name: Export snapshot to CSV
+        run: python export_scan_history.py
+
+      - name: Commit snapshot if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/scan_history.csv
+          git diff --cached --quiet || git commit -m "Daily scan snapshot $(date -u +%Y-%m-%d)"
+          git push
