@@ -61,12 +61,14 @@ class ContractSelector:
         - Score by distance from TARGET_OTM_PCT; prefer closer to target
         """
         target_pct = config.TARGET_OTM_PCT_CALL if option_type == "call" else config.TARGET_OTM_PCT_PUT
+        min_otm_pct = config.MIN_OTM_PCT_CALL if option_type == "call" else config.MIN_OTM_PCT_PUT
 
-        # OTM filter
+        # OTM filter with minimum floor — avoids near-ATM strikes on low-priced
+        # stocks where coarse tick sizes ($5) collapse the intended OTM%
         if option_type == "call":
-            otm = [c for c in candidates if c.strike > spot]
+            otm = [c for c in candidates if c.strike >= spot * (1 + min_otm_pct)]
         else:
-            otm = [c for c in candidates if c.strike < spot]
+            otm = [c for c in candidates if c.strike <= spot * (1 - min_otm_pct)]
 
         if not otm:
             logger.warning("%s: no OTM %ss found in DTE window", symbol, option_type)

@@ -41,6 +41,10 @@ MAX_DTE_AT_ENTRY = 48
 # Selector targets this % OTM then walks in until budget is met.
 TARGET_OTM_PCT_CALL = 0.12   # 12% above spot for calls
 TARGET_OTM_PCT_PUT  = 0.12   # 12% below spot for puts
+# Minimum OTM floor — prevents picking near-ATM strikes on low-priced stocks
+# where $5 tick sizes collapse the OTM% (e.g. HIMS $34 → C35 is only 1.7% OTM)
+MIN_OTM_PCT_CALL    = 0.05   # call strike must be at least 5% above spot
+MIN_OTM_PCT_PUT     = 0.05   # put strike must be at least 5% below spot
 
 # --- Commissions (per contract leg) ---
 COMMISSION_PER_CONTRACT = 0.65  # USD
