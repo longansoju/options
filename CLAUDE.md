@@ -32,6 +32,23 @@ real-money trading until the record proves the decisions out. Rules:
   target / −50% stop / exit by 2 DTE or end of day. Every exit → a labeled outcome.
 - **Track record:** `ResearchLog.paper_stats()` and `review_positions.py`.
 
+## Parked — Moomoo OpenD real-data setup (user will configure later)
+
+User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace
+the Black-Scholes-on-realized-vol estimates. Integration is **already built** and
+committed; only local configuration remains, which the user will do when free.
+
+- Code: `data_ingestion/moomoo_provider.py` (quote-context only, data-only — never
+  handles the trade password) + `data_ingestion/factory.py` (`MARKET_DATA_PROVIDER=moomoo`).
+- Steps + security notes: `docs/moomoo_setup.md`. OpenD runs on the USER's machine
+  (127.0.0.1:11111); this cloud session cannot host it.
+- **Unverified** — first local run with OpenD up must sanity-check `options_chain()`
+  field names against the moomoo app; fix the mapping if the SDK version differs.
+- Until then paper fills are model-priced; **the MAR paper trade is on hold pending a
+  real quote** (or void it).
+
+When the user asks about OpenD, resume from `docs/moomoo_setup.md`.
+
 ## Output format (always)
 
 Every recommendation must (1) state which **strategy** it belongs to — SWING
