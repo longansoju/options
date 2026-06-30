@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 import sqlite3
-from datetime import date, timedelta
+import time
+from datetime import date, timedelta, datetime, timezone
 from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
 
 from .base import (
@@ -28,6 +30,30 @@ def _parse_occ_date(occ_symbol: str) -> date:
         raise ValueError(f"Cannot parse OCC symbol: {occ_symbol}")
     yy, mm, dd = m.group(1)[:2], m.group(1)[2:4], m.group(1)[4:6]
     return date(2000 + int(yy), int(mm), int(dd))
+
+
+def _yf_fetch(call, symbol: str, retries: int | None = None, delay: float | None = None, backoff: float | None = None):
+    """Wrap a yfinance call with pre-call delay and exponential-backoff retry on empty/error."""
+    retries = retries if retries is not None else config.YF_MAX_RETRIES
+    delay   = delay   if delay   is not None else config.YF_INTER_CALL_DELAY
+    backoff = backoff if backoff is not None else config.YF_RETRY_BACKOFF
+    for attempt in range(retries):
+        time.sleep(delay)
+        try:
+            result = call()
+            if result is not None and (not hasattr(result, "empty") or not result.empty):
+                return result
+        except Exception as exc:
+            logger.warning("%s: yfinance call failed (attempt %d/%d): %s", symbol, attempt + 1, retries, exc)
+        if attempt < retries - 1:
+            wait = delay * (backoff ** attempt)
+            logger.warning(
+                "%s: empty/error response (attempt %d/%d), retrying in %.1fs…",
+                symbol, attempt + 1, retries, wait,
+            )
+            time.sleep(wait)
+    logger.error("%s: all %d yfinance attempts exhausted", symbol, retries)
+    return None
 
 
 class YFinanceProvider:
@@ -116,8 +142,8 @@ class YFinanceProvider:
 
     def options_chain(self, symbol: str) -> Chain:
         ticker = yf.Ticker(symbol)
-        hist = ticker.history(period="1d")
-        spot = float(hist["Close"].iloc[-1]) if not hist.empty else 0.0
+        hist = _yf_fetch(lambda: ticker.history(period="1d"), symbol)
+        spot = float(hist["Close"].iloc[-1]) if hist is not None and not hist.empty else 0.0
 
         expirations = ticker.options  # tuple of date strings
         contracts: List[OptionContract] = []
@@ -127,10 +153,9 @@ class YFinanceProvider:
             dte = (exp_date - date.today()).days
             if dte < config.MIN_DTE_AT_ENTRY or dte > config.MAX_DTE_AT_ENTRY:
                 continue
-            try:
-                chain = ticker.option_chain(exp_str)
-            except Exception as exc:
-                logger.warning("Failed fetching chain for %s %s: %s", symbol, exp_str, exc)
+            chain = _yf_fetch(lambda e=exp_str: ticker.option_chain(e), symbol)
+            if chain is None:
+                logger.warning("Failed fetching chain for %s %s after retries", symbol, exp_str)
                 continue
 
             for df, opt_type in [(chain.calls, "call"), (chain.puts, "put")]:
@@ -170,8 +195,70 @@ class YFinanceProvider:
     def price_history(self, symbol: str, lookback_days: int) -> pd.DataFrame:
         ticker = yf.Ticker(symbol)
         period_str = f"{lookback_days + 5}d"
-        df = ticker.history(period=period_str)
-        return df
+        df = _yf_fetch(lambda: ticker.history(period=period_str), symbol)
+        if df is not None and not df.empty:
+            return df
+        # yfinance library parse failure — fall back to direct HTTP
+        return self._price_history_direct(symbol, lookback_days)
+
+    def _price_history_direct(self, symbol: str, lookback_days: int) -> pd.DataFrame:
+        """Fetch OHLCV directly from Yahoo Finance chart API, bypassing yfinance parsing."""
+        time.sleep(config.YF_INTER_CALL_DELAY)
+        total_days = lookback_days + 5
+        # Choose an appropriate interval range string
+        if total_days <= 60:
+            range_str = "3mo"
+        elif total_days <= 180:
+            range_str = "6mo"
+        elif total_days <= 365:
+            range_str = "1y"
+        else:
+            range_str = "2y"
+
+        url = (
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+            f"?interval=1d&range={range_str}"
+        )
+        headers = {"User-Agent": "Mozilla/5.0"}
+        for attempt in range(config.YF_MAX_RETRIES):
+            try:
+                resp = requests.get(url, headers=headers, timeout=15)
+                if resp.status_code == 429:
+                    wait = config.YF_INTER_CALL_DELAY * (config.YF_RETRY_BACKOFF ** attempt)
+                    logger.warning("%s: HTTP 429 rate-limited (attempt %d), retrying in %.1fs", symbol, attempt + 1, wait)
+                    time.sleep(wait)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                result = data.get("chart", {}).get("result", [])
+                if not result:
+                    logger.warning("%s: empty chart result from direct API", symbol)
+                    return pd.DataFrame()
+
+                r = result[0]
+                timestamps = r.get("timestamp", [])
+                quote = r["indicators"]["quote"][0]
+                adjclose_list = r["indicators"].get("adjclose", [{}])[0].get("adjclose", quote.get("close", []))
+
+                df = pd.DataFrame({
+                    "Open":     quote.get("open", []),
+                    "High":     quote.get("high", []),
+                    "Low":      quote.get("low", []),
+                    "Close":    adjclose_list,
+                    "Volume":   quote.get("volume", []),
+                }, index=pd.to_datetime(timestamps, unit="s", utc=True).tz_convert("America/New_York"))
+                df.index.name = "Date"
+                df = df.dropna(subset=["Close"])
+                # Trim to requested lookback
+                cutoff = pd.Timestamp.now(tz="America/New_York") - pd.Timedelta(days=lookback_days)
+                df = df[df.index >= cutoff]
+                logger.info("%s: fetched %d bars via direct HTTP", symbol, len(df))
+                return df
+            except Exception as exc:
+                logger.warning("%s: direct HTTP attempt %d failed: %s", symbol, attempt + 1, exc)
+                if attempt < config.YF_MAX_RETRIES - 1:
+                    time.sleep(config.YF_INTER_CALL_DELAY * (config.YF_RETRY_BACKOFF ** attempt))
+        return pd.DataFrame()
 
     def iv_history(self, symbol: str, lookback_days: int) -> IVSeries:
         dates, vals = self._load_iv_history(symbol, lookback_days)

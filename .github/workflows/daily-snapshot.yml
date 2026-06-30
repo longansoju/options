@@ -1,0 +1,63 @@
+name: Daily scan snapshot
+
+# Two scheduled sessions plus manual dispatch:
+#   • Morning  (~10-11am ET) — momentum-only confirmation scan. Writes a glanceable
+#     readout to data/morning_momentum.txt: "is the setup triggering on the day?"
+#   • Post-close (~4-5pm ET) — full snapshot (swing both directions + momentum) →
+#     the canonical end-of-day dataset in data/scan_history.csv.
+#
+# IMPORTANT: GitHub only fires `schedule` triggers from the repo's DEFAULT branch.
+# Until this file is on the default branch, use "Run workflow" (workflow_dispatch)
+# in the Actions tab to trigger it manually (manual runs do the full post-close set).
+
+on:
+  schedule:
+    # GitHub cron is UTC and does NOT follow DST (~1h drift across the year).
+    - cron: "0 15 * * 1-5"    # ~10am EST / 11am EDT — morning momentum confirmation
+    - cron: "15 21 * * 1-5"   # ~4:15pm EST / 5:15pm EDT — post-close full snapshot
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scans (auto-logs to scan_history)
+        run: |
+          mkdir -p data
+          if [ "${{ github.event.schedule }}" = "0 15 * * 1-5" ]; then
+            echo "::notice::Morning momentum confirmation scan"
+            python scan_momentum.py --top 10 | tee data/morning_momentum.txt
+          else
+            echo "::notice::Post-close full snapshot"
+            python scan_watchlist.py --direction bullish  || true
+            python scan_watchlist.py --direction bearish  || true
+            python scan_momentum.py --top 10 | tee data/momentum_close.txt
+          fi
+
+      - name: Export snapshot to CSV
+        run: python export_scan_history.py
+
+      - name: Commit changes if any
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "Scan snapshot $(date -u +'%Y-%m-%d %H:%MZ')"
+          git push
