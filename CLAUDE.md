@@ -12,6 +12,16 @@ proxy, so all dollar figures are **ballpark, not quotes**.
 - `scan_momentum.py` — weekly/day-trade mode, nearest-Friday weekly (~4 DTE),
   IVR ignored, buy strength (breakouts/breakdowns). `--dte`, `--direction`, `--top`.
 
+## Output format (always)
+
+Every recommendation must (1) state which **strategy** it belongs to — SWING
+(`scan_watchlist`, 35-45 DTE, IVR-gated) or MOMENTUM (`scan_momentum`, weekly
+~4 DTE) — (2) end with a short **summary**, and (3) give the **actual OCC option
+contract code**, not just "BKNG C192.5".
+
+OCC format: `{ROOT}{YYMMDD}{C|P}{strike×1000, zero-padded to 8 digits}`.
+Example: BKNG $192.50 call expiring 2026-07-03 → `BKNG260703C00192500`.
+
 ## Trading lessons (do not repeat)
 
 ### A momentum-scan candidate is NOT an entry signal
