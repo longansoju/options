@@ -165,6 +165,26 @@ framing; both reverted to ~-75% at 3 DTE. Three errors in that one sentence:
 7. A short-dated put into an oversold low (or call into RSI ≥70) is flagged as
    mean-reversion risk explicitly — never listed as "confirmed."
 
+### Overbought is not a short signal; bearish puts need a reason to FALL
+**What happened (2026-06-30 → 07-01):** suggested AXP P305/P300 (short on RSI 79
+"overbought") and COIN P115 (short on weak/oversold, −22% 1M). Held both as *watch*
+(didn't take). The tape flipped risk-on and BOTH rose — AXP +2%, COIN +9% — so the
+puts would have lost ~40–54%. The one bearish put actually TAKEN, CEG P230, won
++181%: CEG kept falling (−7%) on its own name-specific downtrend with LOW IVR, so
+delta AND vega both worked (textbook premium-put).
+
+**The rule going forward:**
+1. **Overbought RSI ≠ short signal.** A firm name stays overbought and grinds higher;
+   shorting extension is fighting momentum (AXP kept climbing).
+2. **A bearish put needs a name-specific reason to FALL** — broken structure, a
+   sustained downtrend, a catalyst — NOT just "it's extended" or "it's weak/oversold."
+   Oversold names bounce (COIN), overbought names keep running (AXP).
+3. **Check the broad tape.** Shorting into a risk-on rally needs a name diverging DOWN
+   from the market (CEG did; AXP/COIN didn't). No divergence → no bearish premium.
+4. The discipline that saved it: took only the highest-conviction put (CEG: LOW IVR +
+   real downtrend), held the rest as watch. Quality over quantity separated the winner
+   from the two would-be losers.
+
 ### Violent-vol names price badly for weekly premium buying
 Names with extreme realized vol (e.g. MRVL, WDC, SMCI, STX at RV 90-160%) make
 weekly OTM strikes near-worthless coin flips and ATM strikes very expensive — poor
