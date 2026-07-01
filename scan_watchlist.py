@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import config
 from analysis.iv_regime import IVRankClassifier, IVRegime
 from analysis.trend import TrendAnalyzer, TrendSignal
-from data_ingestion.yfinance_provider import YFinanceProvider
+from data_ingestion.factory import get_provider
 from journal.research_log import ResearchLog
 
 import logging
@@ -151,7 +151,7 @@ def entry_score(iv_result, trend_result, direction="bullish") -> tuple[int, str]
 
 
 def scan_all(direction: str = "bullish", log: bool = True):
-    provider = YFinanceProvider()
+    provider = get_provider()
     classifier = IVRankClassifier()
     analyzer = TrendAnalyzer()
     rlog = ResearchLog() if log else None

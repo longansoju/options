@@ -12,6 +12,43 @@ proxy, so all dollar figures are **ballpark, not quotes**.
 - `scan_momentum.py` — weekly/day-trade mode, nearest-Friday weekly (~4 DTE),
   IVR ignored, buy strength (breakouts/breakdowns). `--dte`, `--direction`, `--top`.
 
+## Paper-trading account (operating mode, as of 2026-06-30)
+
+Claude runs a **paper book** to build a labeled track record. The user has paused
+real-money trading until the record proves the decisions out. Rules:
+
+- **Quality over quantity.** Take only setups Claude is genuinely confident in (the
+  highest-conviction the system surfaces, with entry discipline satisfied). NEVER
+  force trades to hit a target count — forcing corrupts the experiment and is itself
+  a failure mode.
+- **Entry discipline applies** (see momentum lesson): confirmed trigger only, flag
+  mean-reversion risk, size tiny, 1σ strike on weeklies.
+- **Honest pricing caveat.** No live chain — paper fills are Black-Scholes at the
+  realized-vol proxy, with NO slippage or spread. A paper edge must be robust enough
+  to survive real friction; paper validates direction/timing, not exact premium.
+- **Book separation.** `recommendations.book` = `real` (user's actual fills) |
+  `paper` (Claude's trades) | `watch` (pending-trigger candidates).
+- **Exit rules.** Swing: +75% target / −50% stop / exit by 21 DTE. Momentum: +50%
+  target / −50% stop / exit by 2 DTE or end of day. Every exit → a labeled outcome.
+- **Track record:** `ResearchLog.paper_stats()` and `review_positions.py`.
+
+## Parked — Moomoo OpenD real-data setup (user will configure later)
+
+User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace
+the Black-Scholes-on-realized-vol estimates. Integration is **already built** and
+committed; only local configuration remains, which the user will do when free.
+
+- Code: `data_ingestion/moomoo_provider.py` (quote-context only, data-only — never
+  handles the trade password) + `data_ingestion/factory.py` (`MARKET_DATA_PROVIDER=moomoo`).
+- Steps + security notes: `docs/moomoo_setup.md`. OpenD runs on the USER's machine
+  (127.0.0.1:11111); this cloud session cannot host it.
+- **Unverified** — first local run with OpenD up must sanity-check `options_chain()`
+  field names against the moomoo app; fix the mapping if the SDK version differs.
+- Until then paper fills are model-priced; **the MAR paper trade is on hold pending a
+  real quote** (or void it).
+
+When the user asks about OpenD, resume from `docs/moomoo_setup.md`.
+
 ## Output format (always)
 
 Every recommendation must (1) state which **strategy** it belongs to — SWING
@@ -29,6 +66,19 @@ recommendations** and report how each has moved (fresh price, IVR, trend, DTE,
 in/out of the money, thesis-still-valid?). Open positions to track are kept in
 the `recommendations` / `positions` journal (see `journal/`). Never give new
 picks without first re-checking the old ones.
+
+**Book persistence.** The journal DB is gitignored and ephemeral; the durable book
+is `data/recommendations.csv`. On session start, restore it:
+`python -c "from journal.research_log import ResearchLog as R; R().import_recommendations()"`.
+After ANY book change (open/close a trade), re-export and commit it:
+`python -c "from journal.research_log import ResearchLog as R; R().export_recommendations()"`.
+The daily cron must NOT export this file (its DB is fresh and would clobber the book).
+
+**Timezone.** User is in Singapore (GMT+8). Precise timestamps (`scan_ts`, `entry_ts`,
+`exit_ts`) are recorded in **SGT with an explicit `+08:00` offset**. Date-key fields
+(`scan_date`, `created_date`, `exit_date`) stay on the **UTC calendar date** (≈ the US
+trading date for US-session scans), so a post-close scan can read e.g. `scan_date=06-30`
+with `scan_ts=07-01T06:47+08:00` — same US session, shown in local time.
 
 ## Trading lessons (do not repeat)
 

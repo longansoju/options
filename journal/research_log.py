@@ -19,11 +19,25 @@ closed (real exit premium + date) → that's the labeled data for later calibrat
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Optional
 
 import config
+
+# The user trades from Singapore (GMT+8). Precise timestamps are recorded in SGT
+# with an explicit +08:00 offset so they read correctly in local time. Date-key
+# fields (scan_date, created_date, exit_date) stay on the UTC calendar date, which
+# for US-session scan times equals the US trading date — keeps per-session keys stable.
+SGT = timezone(timedelta(hours=8))
+
+
+def _sgt_now() -> str:
+    return datetime.now(SGT).isoformat(timespec="seconds")
+
+
+def _utc_today() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS scan_history (
@@ -68,7 +82,11 @@ CREATE TABLE IF NOT EXISTS recommendations (
     entry_premium     REAL,                 -- per-contract; actual if held, else est
     thesis            TEXT,
     status            TEXT NOT NULL DEFAULT 'open',  -- open|closed|expired|skipped
+    book              TEXT NOT NULL DEFAULT 'watch',  -- real | paper | watch
+    entry_ts          TEXT,                           -- precise ISO time the entry was booked
+    price_source      TEXT NOT NULL DEFAULT 'estimate',  -- estimate | real (backfill target)
     exit_date         TEXT,
+    exit_ts           TEXT,                           -- precise ISO time of exit
     exit_ref_price    REAL,
     exit_premium      REAL,
     pnl_pct           REAL,
@@ -91,6 +109,16 @@ class ResearchLog:
         self._db = db_path
         con = sqlite3.connect(db_path)
         con.executescript(_SCHEMA)
+        # migrations for columns added after a DB was first created
+        cols = [r[1] for r in con.execute("PRAGMA table_info(recommendations)").fetchall()]
+        for name, ddl in (
+            ("book", "TEXT NOT NULL DEFAULT 'watch'"),
+            ("entry_ts", "TEXT"),
+            ("price_source", "TEXT NOT NULL DEFAULT 'estimate'"),
+            ("exit_ts", "TEXT"),
+        ):
+            if name not in cols:
+                con.execute(f"ALTER TABLE recommendations ADD COLUMN {name} {ddl}")
         con.commit()
         con.close()
 
@@ -105,9 +133,8 @@ class ResearchLog:
                      scan_date: str | None = None, scan_ts: str | None = None,
                      **fields) -> None:
         """Upsert one snapshot row. Unknown kwargs are ignored, missing → NULL."""
-        now = datetime.now()
-        scan_ts = scan_ts or now.isoformat(timespec="seconds")
-        scan_date = scan_date or now.date().isoformat()
+        scan_ts = scan_ts or _sgt_now()
+        scan_date = scan_date or _utc_today()
         cols = ["price", "ivr", "ivr_regime", "ivr_is_proxy", "trend_signal",
                 "trend_score", "rsi", "ret1m", "ret3m", "rv", "vol_rank",
                 "atr_pct", "ret5", "vol_ratio", "ignition", "entry_score",
@@ -146,25 +173,51 @@ class ResearchLog:
     def add_recommendation(self, symbol: str, strategy: str, direction: str,
                            strike: float, expiry: str, *, entry_ref_price=None,
                            entry_premium=None, thesis=None, created_date=None,
-                           status="open") -> str:
-        created_date = created_date or date.today().isoformat()
+                           status="open", book="watch", price_source="estimate",
+                           entry_ts=None) -> str:
+        created_date = created_date or _utc_today()
+        entry_ts = entry_ts or _sgt_now()
         code = occ_code(symbol, expiry, direction, strike)
         con = self._con()
         con.execute(
             """INSERT OR REPLACE INTO recommendations
                (created_date, symbol, strategy, direction, strike, expiry, occ_code,
-                entry_ref_price, entry_premium, thesis, status)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                entry_ref_price, entry_premium, thesis, status, book, entry_ts, price_source)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (created_date, symbol.upper(), strategy, direction.lower(), strike,
-             expiry, code, entry_ref_price, entry_premium, thesis, status),
+             expiry, code, entry_ref_price, entry_premium, thesis, status, book,
+             entry_ts, price_source),
         )
         con.commit()
         con.close()
         return code
 
+    def paper_stats(self) -> dict:
+        """Track-record summary over CLOSED paper trades."""
+        con = self._con()
+        rows = con.execute(
+            "SELECT entry_premium, exit_premium, pnl_pct FROM recommendations "
+            "WHERE book='paper' AND status='closed' AND exit_premium IS NOT NULL "
+            "AND entry_premium IS NOT NULL"
+        ).fetchall()
+        con.close()
+        n = len(rows)
+        if not n:
+            return {"closed": 0}
+        wins = sum(1 for r in rows if (r["pnl_pct"] or 0) > 0)
+        cost = sum(r["entry_premium"] for r in rows)
+        proceeds = sum(r["exit_premium"] for r in rows)
+        return {
+            "closed": n, "wins": wins, "win_rate": wins / n * 100,
+            "avg_pnl_pct": sum(r["pnl_pct"] for r in rows) / n,
+            "cost": cost, "proceeds": proceeds, "net": proceeds - cost,
+            "net_pct": (proceeds / cost - 1) * 100 if cost else 0,
+        }
+
     def close_recommendation(self, occ: str, *, exit_premium=None, exit_ref_price=None,
                              status="closed", notes=None, exit_date=None) -> bool:
-        exit_date = exit_date or date.today().isoformat()
+        exit_date = exit_date or _utc_today()
+        exit_ts = _sgt_now()
         con = self._con()
         row = con.execute(
             "SELECT entry_premium FROM recommendations WHERE occ_code=? AND status='open' "
@@ -179,14 +232,52 @@ class ResearchLog:
             pnl = (exit_premium - ep) / ep * 100
         con.execute(
             """UPDATE recommendations
-               SET status=?, exit_date=?, exit_ref_price=?, exit_premium=?, pnl_pct=?,
+               SET status=?, exit_date=?, exit_ts=?, exit_ref_price=?, exit_premium=?, pnl_pct=?,
                    notes=COALESCE(?, notes)
                WHERE occ_code=? AND status='open'""",
-            (status, exit_date, exit_ref_price, exit_premium, pnl, notes, occ),
+            (status, exit_date, exit_ts, exit_ref_price, exit_premium, pnl, notes, occ),
         )
         con.commit()
         con.close()
         return True
+
+    def export_recommendations(self, path: str = "data/recommendations.csv") -> int:
+        """Dump the book to a committed CSV (durable across ephemeral containers)."""
+        import csv
+        import os
+        con = self._con()
+        rows = con.execute("SELECT * FROM recommendations ORDER BY created_date, id").fetchall()
+        con.close()
+        if not rows:
+            return 0
+        cols = [c for c in rows[0].keys() if c != "id"]
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=cols)
+            w.writeheader()
+            for r in rows:
+                w.writerow({c: r[c] for c in cols})
+        return len(rows)
+
+    def import_recommendations(self, path: str = "data/recommendations.csv") -> int:
+        """Restore the book from the committed CSV into the DB (idempotent)."""
+        import csv
+        import os
+        if not os.path.exists(path):
+            return 0
+        con = self._con()
+        n = 0
+        with open(path) as f:
+            for row in csv.DictReader(f):
+                cols = list(row.keys())
+                vals = [row[c] if row[c] not in ("", None) else None for c in cols]
+                con.execute(
+                    f"INSERT OR REPLACE INTO recommendations ({','.join(cols)}) "
+                    f"VALUES ({','.join(['?'] * len(cols))})", vals)
+                n += 1
+        con.commit()
+        con.close()
+        return n
 
     def recommendations(self, *, status: str | None = "open"):
         con = self._con()

@@ -44,7 +44,7 @@ import pandas as pd
 
 import config
 from analysis.trend import TrendAnalyzer
-from data_ingestion.yfinance_provider import YFinanceProvider
+from data_ingestion.factory import get_provider
 from journal.research_log import ResearchLog
 
 import logging
@@ -251,7 +251,7 @@ def _strike_ladder(row: MomentumRow, dte: int) -> list[tuple[str, float, float, 
 
 
 def scan(direction: Optional[str], dte_override: Optional[int], top: int, log: bool = True):
-    provider = YFinanceProvider()
+    provider = get_provider()
     analyzer = TrendAnalyzer()
     rlog = ResearchLog() if log else None
     today = date.today()
