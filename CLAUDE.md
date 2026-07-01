@@ -12,6 +12,26 @@ proxy, so all dollar figures are **ballpark, not quotes**.
 - `scan_momentum.py` — weekly/day-trade mode, nearest-Friday weekly (~4 DTE),
   IVR ignored, buy strength (breakouts/breakdowns). `--dte`, `--direction`, `--top`.
 
+## User's trading style — premium trading (frame ALL analysis this way)
+
+The user **profits from premium appreciation and sells before expiry** — they do NOT
+need the stock to cross the strike. Consequences that must shape every recommendation:
+
+- **Calls at HIGH IVR are poor vehicles.** On a rally, IV compresses — vega works
+  *against* you and eats the delta gain. A stock can go up while the call premium stays
+  flat or falls. Prefer LOW IVR for call premium buys (room for vol to expand).
+- **Puts benefit on a drop:** delta AND vega (vol expands as price falls) both work for
+  you, so IVR level matters less for puts.
+- **Harvest strength.** When a losing position bounces back into green and the greeks
+  turn against further gains (high IVR + accelerating theta), TAKE the premium — don't
+  hold hoping the bounce becomes a trend.
+- **Theta:** ≤21 DTE bleeds fast; a flat day can cost several %/day on an OTM contract.
+- **Earnings/IV timing:** the pre-earnings IV ramp only lifts options that EXPIRE AFTER
+  the report. An option expiring *before* earnings gets zero earnings vega — never hold
+  it for a catalyst it won't survive to see. To play earnings as a premium trader, buy a
+  post-earnings expiry ~1-2 weeks out and SELL BEFORE the print (capture the ramp, dodge
+  the crush).
+
 ## Paper-trading account (operating mode, as of 2026-06-30)
 
 Claude runs a **paper book** to build a labeled track record. The user has paused
@@ -48,6 +68,27 @@ committed; only local configuration remains, which the user will do when free.
   real quote** (or void it).
 
 When the user asks about OpenD, resume from `docs/moomoo_setup.md`.
+
+## Deployment & automation
+
+- **GitHub Action** (`.github/workflows/daily-snapshot.yml`): morning momentum
+  confirmation (~15:00 UTC / 10-11am ET) + post-close full snapshot (~21:15 UTC /
+  4-5pm ET), weekdays. Appends to `data/scan_history.csv` — the durable dataset. Only
+  fires from the DEFAULT branch.
+- **Canonical branch = default** (`claude/planning-session-ipr02p`): the cron commits
+  the dataset there. Pull before working so book + data stay in one place; the working
+  branch is kept fast-forwarded to it.
+- **VPS (the "proper" live setup, `deploy/vps_setup.md`):** run OpenD + scanners +
+  system cron on a VPS for REAL data + Telegram push. `deploy/run_scans.sh` (morning|
+  close) → scans, export, git backup, Telegram summary via `deploy/notify_telegram.py`
+  (`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`). Disable the GitHub Action once the VPS is
+  live so estimate data doesn't overwrite real data.
+- **This cloud session and the VPS communicate ONLY through the git repo** (async, no
+  direct link). Telegram (from the VPS) is the user's real-time channel.
+- **Phase 2 (calibration), the goal:** once ~20-30 closed paper outcomes exist, measure
+  which features (entry_score, near_hl, IVR regime) actually predicted winners and
+  re-weight from real results — first hypothesis: "entered at the level" vs "entered
+  after break-and-hold."
 
 ## Output format (always)
 
