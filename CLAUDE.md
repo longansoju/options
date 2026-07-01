@@ -74,6 +74,12 @@ After ANY book change (open/close a trade), re-export and commit it:
 `python -c "from journal.research_log import ResearchLog as R; R().export_recommendations()"`.
 The daily cron must NOT export this file (its DB is fresh and would clobber the book).
 
+**Timezone.** User is in Singapore (GMT+8). Precise timestamps (`scan_ts`, `entry_ts`,
+`exit_ts`) are recorded in **SGT with an explicit `+08:00` offset**. Date-key fields
+(`scan_date`, `created_date`, `exit_date`) stay on the **UTC calendar date** (≈ the US
+trading date for US-session scans), so a post-close scan can read e.g. `scan_date=06-30`
+with `scan_ts=07-01T06:47+08:00` — same US session, shown in local time.
+
 ## Trading lessons (do not repeat)
 
 ### A momentum-scan candidate is NOT an entry signal

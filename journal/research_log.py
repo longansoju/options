@@ -19,11 +19,25 @@ closed (real exit premium + date) → that's the labeled data for later calibrat
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Optional
 
 import config
+
+# The user trades from Singapore (GMT+8). Precise timestamps are recorded in SGT
+# with an explicit +08:00 offset so they read correctly in local time. Date-key
+# fields (scan_date, created_date, exit_date) stay on the UTC calendar date, which
+# for US-session scan times equals the US trading date — keeps per-session keys stable.
+SGT = timezone(timedelta(hours=8))
+
+
+def _sgt_now() -> str:
+    return datetime.now(SGT).isoformat(timespec="seconds")
+
+
+def _utc_today() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS scan_history (
@@ -119,9 +133,8 @@ class ResearchLog:
                      scan_date: str | None = None, scan_ts: str | None = None,
                      **fields) -> None:
         """Upsert one snapshot row. Unknown kwargs are ignored, missing → NULL."""
-        now = datetime.now()
-        scan_ts = scan_ts or now.isoformat(timespec="seconds")
-        scan_date = scan_date or now.date().isoformat()
+        scan_ts = scan_ts or _sgt_now()
+        scan_date = scan_date or _utc_today()
         cols = ["price", "ivr", "ivr_regime", "ivr_is_proxy", "trend_signal",
                 "trend_score", "rsi", "ret1m", "ret3m", "rv", "vol_rank",
                 "atr_pct", "ret5", "vol_ratio", "ignition", "entry_score",
@@ -162,8 +175,8 @@ class ResearchLog:
                            entry_premium=None, thesis=None, created_date=None,
                            status="open", book="watch", price_source="estimate",
                            entry_ts=None) -> str:
-        created_date = created_date or date.today().isoformat()
-        entry_ts = entry_ts or datetime.now().isoformat(timespec="seconds")
+        created_date = created_date or _utc_today()
+        entry_ts = entry_ts or _sgt_now()
         code = occ_code(symbol, expiry, direction, strike)
         con = self._con()
         con.execute(
@@ -203,8 +216,8 @@ class ResearchLog:
 
     def close_recommendation(self, occ: str, *, exit_premium=None, exit_ref_price=None,
                              status="closed", notes=None, exit_date=None) -> bool:
-        exit_date = exit_date or date.today().isoformat()
-        exit_ts = datetime.now().isoformat(timespec="seconds")
+        exit_date = exit_date or _utc_today()
+        exit_ts = _sgt_now()
         con = self._con()
         row = con.execute(
             "SELECT entry_premium FROM recommendations WHERE occ_code=? AND status='open' "
