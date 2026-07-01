@@ -1,106 +1,106 @@
 
-Momentum / Weekly-Lotto Scan — 2026-06-30  |  expiry=2026-07-03 (3 DTE)  |  direction=auto
+Momentum / Weekly-Lotto Scan — 2026-07-01  |  expiry=2026-07-03 (2 DTE)  |  direction=auto
   daily bars only · IVR ignored by design · BS premium via realized-vol proxy
 ========================================================================================================
 Sym        Spot  Dir    RV% VolRk   ATR%   5d%  Vol×  RSI   Ign  Why
 --------------------------------------------------------------------------------------------------------
-CAT    $1064.90 CALL     56   100    4.0    +8   1.6   66     9  ATR4.0%+2 vol1.6x+2 5d+8%+2 @20dHi+2 RSImom+1
-NUE     $222.75  PUT     40    74    4.1    -7   1.4   31     9  ATR4.1%+2 vol1.4x+2 5d-7%+2 @20dLo+2 RSImom+1
-TSM     $477.57 CALL     61   100    4.1    +9   1.1   63     8  ATR4.1%+2 vol1.1x+1 5d+9%+2 @20dHi+2 RSImom+1
-ASML   $1989.44 CALL     71   100    4.9   +12   1.2   61     8  ATR4.9%+2 vol1.2x+1 5d+12%+2 @20dHi+2 RSImom+1
-TSLA    $420.60 CALL     56    54    4.2   +10   0.9   58     7  ATR4.2%+2 5d+10%+2 @20dHi+2 RSImom+1
-MRVL    $297.89 CALL    157   100    9.1    +7   1.4   57     7  ATR9.1%+2 vol1.4x+2 5d+7%+2 RSImom+1
-HLT     $330.46  PUT     17    16    2.6    -4   1.7   34     7  ATR2.6%+1 vol1.7x+2 5d-4%+1 @20dLo+2 RSImom+1
-MU     $1154.29 CALL    128    96    8.9   +10   1.1   61     6  ATR8.9%+2 vol1.1x+1 5d+10%+2 RSImom+1
-STX     $965.00  PUT     88    83    8.9    -7   1.3   59     6  ATR8.9%+2 vol1.3x+2 5d-7%+2
-NVTS     $17.92  PUT    137    64   12.0   -16   0.6   35     6  ATR12.0%+2 5d-16%+2 nrLo+1 RSImom+1
-MPWR   $1382.36  PUT     91   100    7.5    -3   1.7   42     6  ATR7.5%+2 vol1.7x+2 5d-3%+1 RSImom+1
-SMCI     $29.33  PUT    159    94   11.3   -12   1.2   34     6  ATR11.3%+2 vol1.2x+1 5d-12%+2 RSImom+1
-VRT     $334.82 CALL     84    84    6.6    +5   1.3   61     6  ATR6.6%+2 vol1.3x+1 5d+5%+2 RSImom+1
-HIMS     $34.67 CALL     82    33    7.9    +5   0.8   65     6  ATR7.9%+2 5d+5%+2 nrHi+1 RSImom+1
-MAR     $370.59  PUT     23    30    2.7    -4   1.3   32     6  ATR2.7%+1 vol1.3x+1 5d-4%+1 @20dLo+2 RSImom+1
-BKNG    $178.24 CALL     42    60    3.8    +6   1.3   63     6  ATR3.8%+1 vol1.3x+1 5d+6%+2 nrHi+1 RSImom+1
-V       $343.09 CALL     22    41    2.0    +4   1.3   69     6  vol1.3x+2 5d+4%+1 @20dHi+2 RSImom+1
-MA      $513.60 CALL     26    63    2.1    +5   1.2   61     6  vol1.2x+1 5d+5%+2 @20dHi+2 RSImom+1
-GS     $1011.37  PUT     39    83    3.2    -8   1.2   46     6  ATR3.2%+1 vol1.2x+1 5d-8%+2 @20dLo+2
-COIN    $146.19  PUT     65    33    6.8    -8   0.9   43     6  ATR6.8%+2 5d-8%+2 nrLo+1 RSImom+1
-WDC     $638.72  PUT    117   100   10.2    -5   1.6   60     5  ATR10.2%+2 vol1.6x+2 5d-5%+1
-ANET    $169.88 CALL     59    70    4.9    +5   0.8   63     5  ATR4.9%+2 5d+5%+1 nrHi+1 RSImom+1
-DELL    $431.46 CALL     61    33    6.9    +1   1.0   64     5  ATR6.9%+2 @20dHi+2 RSImom+1
-LLY    $1199.43 CALL     35    37    3.1    +8   1.0   61     5  ATR3.1%+1 5d+8%+2 nrHi+1 RSImom+1
-RCL     $317.53 CALL     53    56    4.7    +3   1.0   66     5  ATR4.7%+2 5d+3%+1 nrHi+1 RSImom+1
-NFLX     $71.40  PUT     35    43    3.6    -2   1.5   26     5  ATR3.6%+1 vol1.5x+2 @20dLo+2
-SPY     $746.77 CALL     18    86    1.5    +2   1.2   56     4  vol1.2x+1 @20dHi+2 RSImom+1
-QQQ     $736.40 CALL     34   100    2.4    +3   1.1   58     4  5d+3%+1 @20dHi+2 RSImom+1
-MSFT    $373.02  PUT     39    72    3.5    -0   1.5   37     4  ATR3.5%+1 vol1.5x+2 RSImom+1
-AVGO    $377.75  PUT     75    95    4.3    -1   1.2   46     4  ATR4.3%+2 vol1.2x+1 nrLo+1
-COHR    $394.47 CALL    116    99    9.1    +3   1.0   58     4  ATR9.1%+2 5d+3%+1 RSImom+1
-NBIS    $276.17 CALL     91    33    9.8    +0   1.0   67     4  ATR9.8%+2 nrHi+1 RSImom+1
-CRDO    $271.95  PUT    111    94   10.6    -0   1.3   58     4  ATR10.6%+2 vol1.3x+2
-CEG     $248.37  PUT     37    39    3.9    -8   1.0   48     4  ATR3.9%+1 5d-8%+2 nrLo+1
-AXP     $338.25 CALL     27    40    2.3    +0   1.1   72     4  vol1.1x+1 @20dHi+2 RSImom+1
-FCX      $62.89  PUT     62    65    4.4    -2   1.0   47     4  ATR4.4%+2 5d-2%+1 nrLo+1
-PLTR    $116.67  PUT     55    59    5.0    -0   1.1   34     4  ATR5.0%+2 vol1.1x+1 RSImom+1
-AAPL    $289.36  PUT     36   100    2.9    -2   1.5   49     3  ATR2.9%+1 vol1.5x+2
-AMZN    $238.34 CALL     38    68    3.6    +2   1.6   46     3  ATR3.6%+1 vol1.6x+2
-VST     $158.63  PUT     45    35    4.6    -2   0.9   61     3  ATR4.6%+2 5d-2%+1
-NVO      $47.94 CALL     39    20    2.8    +1   0.8   85     2  ATR2.8%+1 @20dHi+2 RSIexh-1
-NVDA    $200.09 CALL     42    78    3.2    +0   1.0   43     1  ATR3.2%+1
-META    $563.29 CALL     42    67    3.3    +0   1.0   43     1  ATR3.3%+1
+NUE     $219.02  PUT     38    88    4.2    -9   1.4   31     9  ATR4.2%+2 vol1.4x+2 5d-9%+2 @20dLo+2 RSImom+1
+MPWR   $1331.73  PUT     89    97    7.5    -7   1.7   42     8  ATR7.5%+2 vol1.7x+2 5d-7%+2 nrLo+1 RSImom+1
+TSLA    $425.30 CALL     56    54    4.1   +13   0.9   66     7  ATR4.1%+2 5d+13%+2 @20dHi+2 RSImom+1
+NVTS     $16.53  PUT    137    64   12.5   -10   0.6   37     7  ATR12.5%+2 5d-10%+2 @20dLo+2 RSImom+1
+SMCI     $27.65  PUT    155    91    9.5   -15   1.2   47     7  ATR9.5%+2 vol1.2x+1 5d-15%+2 @20dLo+2
+CEG     $236.50  PUT     39    43    4.4   -12   1.1   46     7  ATR4.4%+2 vol1.1x+1 5d-12%+2 @20dLo+2
+META    $612.91 CALL     52    95    3.6   +10   1.2   62     6  ATR3.6%+1 vol1.2x+1 5d+10%+2 nrHi+1 RSImom+1
+AVGO    $369.34  PUT     72    90    4.2    -3   1.1   49     6  ATR4.2%+2 vol1.1x+1 5d-3%+1 @20dLo+2
+WDC     $598.37  PUT    119   100   11.1    -7   1.5   59     6  ATR11.1%+2 vol1.5x+2 5d-7%+2
+HIMS     $37.57 CALL     85    35    7.6   +15   0.8   74     6  ATR7.6%+2 5d+15%+2 @20dHi+2
+MAR     $368.32  PUT     23    29    2.6    -4   1.2   35     6  ATR2.6%+1 vol1.2x+1 5d-4%+1 @20dLo+2 RSImom+1
+HLT     $332.12  PUT     17    17    2.4    -3   1.7   41     6  vol1.7x+2 5d-3%+1 @20dLo+2 RSImom+1
+V       $351.08 CALL     21    39    2.1    +6   1.3   77     6  vol1.3x+2 5d+6%+2 @20dHi+2
+MA      $522.44 CALL     23    47    2.2    +6   1.2   70     6  vol1.2x+1 5d+6%+2 @20dHi+2 RSImom+1
+MSFT    $384.28 CALL     39    73    3.5    +5   1.5   44     5  ATR3.5%+1 vol1.5x+2 5d+5%+2
+STX     $915.19  PUT     90    86    9.6    -8   1.3   58     5  ATR9.6%+2 vol1.3x+1 5d-8%+2
+COHR    $368.65  PUT    102    84    9.8    -6   1.0   53     5  ATR9.8%+2 5d-6%+2 nrLo+1
+CRDO    $259.09  PUT    113    97   10.7    -4   1.3   54     5  ATR10.7%+2 vol1.3x+2 5d-4%+1
+ASML   $1843.04 CALL     76   100    5.5    +5   1.2   55     5  ATR5.5%+2 vol1.2x+1 5d+5%+1 RSImom+1
+LLY    $1191.74 CALL     34    35    3.2    +7   1.1   61     5  ATR3.2%+1 5d+7%+2 nrHi+1 RSImom+1
+BKNG    $182.64 CALL     42    61    3.8    +1   1.2   70     5  ATR3.8%+1 vol1.2x+1 @20dHi+2 RSImom+1
+GS     $1019.61  PUT     39    82    3.1    -5   1.2   54     5  ATR3.1%+1 vol1.2x+1 5d-5%+2 nrLo+1
+FCX      $60.53  PUT     57    57    4.6    -2   1.1   47     5  ATR4.6%+2 5d-2%+1 @20dLo+2
+PLTR    $125.73 CALL     62    74    5.1   +11   1.2   46     5  ATR5.1%+2 vol1.2x+1 5d+11%+2
+SPY     $745.76 CALL     18    86    1.5    +2   1.1   62     4  vol1.1x+1 @20dHi+2 RSImom+1
+AMZN    $241.70 CALL     38    69    3.7    +3   1.6   53     4  ATR3.7%+1 vol1.6x+2 5d+3%+1
+MRVL    $272.05  PUT    126    75   10.1    -2   1.3   54     4  ATR10.1%+2 vol1.3x+2
+NBIS    $229.18  PUT    113    56   12.7   -12   1.1   54     4  ATR12.7%+2 5d-12%+2
+ANET    $166.62 CALL     59    69    5.2    +3   0.9   60     4  ATR5.2%+2 5d+3%+1 RSImom+1
+VRT     $311.42  PUT     87    89    7.2    -2   1.3   57     4  ATR7.2%+2 vol1.3x+2
+TSM     $444.23 CALL     66   100    4.7    +1   1.2   59     4  ATR4.7%+2 vol1.2x+1 RSImom+1
+VST     $153.16  PUT     46    37    4.7    -6   0.9   64     4  ATR4.7%+2 5d-6%+2
+CAT     $991.41  PUT     61   100    4.4    -0   1.6   64     4  ATR4.4%+2 vol1.6x+2
+COIN    $159.24 CALL     72    41    6.6    +6   1.0   54     4  ATR6.6%+2 5d+6%+2
+NFLX     $74.19 CALL     38    50    3.6    +3   1.4   33     4  ATR3.6%+1 vol1.4x+2 5d+3%+1
+QQQ     $725.17 CALL     34   100    2.4    +2   1.1   59     3  5d+2%+1 nrHi+1 RSImom+1
+AAPL    $294.38 CALL     35    96    2.8    +0   1.5   52     3  ATR2.8%+1 vol1.5x+2
+MU     $1032.28  PUT    134   100   10.3    -2   1.1   57     3  ATR10.3%+2 vol1.1x+1
+DELL    $425.25  PUT     57    29    7.0    -2   1.0   67     3  ATR7.0%+2 5d-2%+1
+NVO      $48.77 CALL     38    19    2.6    +3   0.9   85     3  ATR2.6%+1 5d+3%+1 @20dHi+2 RSIexh-1
+RCL     $306.30  PUT     55    59    4.8    -5   1.0   67     3  ATR4.8%+2 5d-5%+1
+NVDA    $197.58  PUT     42    78    3.2    -1   1.0   47     2  ATR3.2%+1 nrLo+1
+AXP     $348.00 CALL     28    43    2.4    +2   1.1   84     2  vol1.1x+1 @20dHi+2 RSIexh-1
 
 ========================================================================================================
 STRIKE LADDERS — top 10 by ignition  (premium = per contract, ballpark)
-expected 1σ move over 3 days shown per name
+expected 1σ move over 2 days shown per name
 
-  CAT  CALL  spot $1064.90  | RV 56%  ATR 4.0%  ign 9  | 1σ move ±$65 (±6.1%)
-      ATM       C1060.0   -0.5% OTM   ~$   2414/contract   P(ITM)~52.9%
-      1σ        C1130.0    6.1% OTM   ~$    332/contract   P(ITM)~11.6%
-      2σ-lotto  C1190.0   11.7% OTM   ~$     28/contract   P(ITM)~ 1.3%
+  NUE  PUT  spot $219.02  | RV 38%  ATR 4.2%  ign 9  | 1σ move ±$7 (±3.4%)
+      ATM       P220.0    -0.4% OTM   ~$    297/contract   P(ITM)~56.5%
+      1σ        P212.5     3.0% OTM   ~$     44/contract   P(ITM)~14.4%
+      2σ-lotto  P205.0     6.4% OTM   ~$      2/contract   P(ITM)~ 1.0%
 
-  NUE  PUT  spot $222.75  | RV 40%  ATR 4.1%  ign 9  | 1σ move ±$10 (±4.4%)
-      ATM       P222.5     0.1% OTM   ~$    308/contract   P(ITM)~49.1%
-      1σ        P212.5     4.6% OTM   ~$     36/contract   P(ITM)~10.0%
-      2σ-lotto  P202.5     9.1% OTM   ~$      1/contract   P(ITM)~ 0.5%
+  MPWR  PUT  spot $1331.73  | RV 89%  ATR 7.5%  ign 8  | 1σ move ±$106 (±7.9%)
+      ATM       P1330.0    0.1% OTM   ~$   3401/contract   P(ITM)~50.4%
+      1σ        P1230.0    7.6% OTM   ~$    466/contract   P(ITM)~12.0%
+      2σ-lotto  P1120.0   15.9% OTM   ~$     11/contract   P(ITM)~ 0.5%
 
-  TSM  CALL  spot $477.57  | RV 61%  ATR 4.1%  ign 8  | 1σ move ±$32 (±6.6%)
-      ATM       C480.0     0.5% OTM   ~$    939/contract   P(ITM)~45.5%
-      1σ        C510.0     6.8% OTM   ~$    155/contract   P(ITM)~11.2%
-      2σ-lotto  C540.0    13.1% OTM   ~$     12/contract   P(ITM)~ 1.2%
+  TSLA  CALL  spot $425.30  | RV 56%  ATR 4.1%  ign 7  | 1σ move ±$21 (±5.0%)
+      ATM       C425.0    -0.1% OTM   ~$    725/contract   P(ITM)~50.1%
+      1σ        C445.0     4.6% OTM   ~$    128/contract   P(ITM)~13.5%
+      2σ-lotto  C470.0    10.5% OTM   ~$      5/contract   P(ITM)~ 0.8%
 
-  ASML  CALL  spot $1989.44  | RV 71%  ATR 4.9%  ign 8  | 1σ move ±$154 (±7.8%)
-      ATM       C1990.0    0.0% OTM   ~$   5128/contract   P(ITM)~48.8%
-      1σ        C2140.0    7.6% OTM   ~$    869/contract   P(ITM)~12.4%
-      2σ-lotto  C2300.0   15.6% OTM   ~$     60/contract   P(ITM)~ 1.1%
+  NVTS  PUT  spot $16.53  | RV 137%  ATR 12.5%  ign 7  | 1σ move ±$2 (±12.2%)
+      ATM       P16.5      0.2% OTM   ~$     65/contract   P(ITM)~51.2%
+      1σ        P14.5     12.3% OTM   ~$      7/contract   P(ITM)~10.7%
+      2σ-lotto  P12.5     24.4% OTM   ~$      0/contract   P(ITM)~ 0.3%
 
-  TSLA  CALL  spot $420.60  | RV 56%  ATR 4.2%  ign 7  | 1σ move ±$26 (±6.1%)
-      ATM       C420.0    -0.1% OTM   ~$    895/contract   P(ITM)~50.4%
-      1σ        C445.0     5.8% OTM   ~$    153/contract   P(ITM)~13.1%
-      2σ-lotto  C470.0    11.7% OTM   ~$     12/contract   P(ITM)~ 1.4%
+  SMCI  PUT  spot $27.65  | RV 155%  ATR 9.5%  ign 7  | 1σ move ±$4 (±13.8%)
+      ATM       P28.0     -1.3% OTM   ~$    145/contract   P(ITM)~56.5%
+      1σ        P24.0     13.2% OTM   ~$     15/contract   P(ITM)~12.0%
+      2σ-lotto  P20.0     27.7% OTM   ~$      0/contract   P(ITM)~ 0.3%
 
-  MRVL  CALL  spot $297.89  | RV 157%  ATR 9.1%  ign 7  | 1σ move ±$51 (±17.2%)
-      ATM       C300.0     0.7% OTM   ~$   1603/contract   P(ITM)~45.3%
-      1σ        C350.0    17.5% OTM   ~$    299/contract   P(ITM)~11.5%
-      2σ-lotto  C400.0    34.3% OTM   ~$     35/contract   P(ITM)~ 1.6%
+  CEG  PUT  spot $236.50  | RV 39%  ATR 4.4%  ign 7  | 1σ move ±$8 (±3.5%)
+      ATM       P237.5    -0.4% OTM   ~$    321/contract   P(ITM)~56.1%
+      1σ        P227.5     3.8% OTM   ~$     27/contract   P(ITM)~ 8.9%
+      2σ-lotto  P220.0     7.0% OTM   ~$      1/contract   P(ITM)~ 0.6%
 
-  HLT  PUT  spot $330.46  | RV 17%  ATR 2.6%  ign 7  | 1σ move ±$6 (±1.9%)
-      ATM       P330.0     0.1% OTM   ~$    175/contract   P(ITM)~45.7%
-      1σ        P325.0     1.7% OTM   ~$     34/contract   P(ITM)~13.6%
-      2σ-lotto  P320.0     3.2% OTM   ~$      3/contract   P(ITM)~ 1.8%
+  META  CALL  spot $612.91  | RV 52%  ATR 3.6%  ign 6  | 1σ move ±$29 (±4.7%)
+      ATM       C610.0    -0.5% OTM   ~$   1104/contract   P(ITM)~54.4%
+      1σ        C640.0     4.4% OTM   ~$    162/contract   P(ITM)~12.9%
+      2σ-lotto  C670.0     9.3% OTM   ~$      9/contract   P(ITM)~ 1.0%
 
-  MU  CALL  spot $1154.29  | RV 128%  ATR 8.9%  ign 6  | 1σ move ±$161 (±14.0%)
-      ATM       C1150.0   -0.4% OTM   ~$   5570/contract   P(ITM)~49.1%
-      1σ        C1320.0   14.4% OTM   ~$    884/contract   P(ITM)~11.3%
-      2σ-lotto  C1480.0   28.2% OTM   ~$     88/contract   P(ITM)~ 1.4%
+  AVGO  PUT  spot $369.34  | RV 72%  ATR 4.2%  ign 6  | 1σ move ±$24 (±6.4%)
+      ATM       P370.0    -0.2% OTM   ~$    813/contract   P(ITM)~52.2%
+      1σ        P345.0     6.6% OTM   ~$     89/contract   P(ITM)~10.4%
+      2σ-lotto  P320.0    13.4% OTM   ~$      2/contract   P(ITM)~ 0.4%
 
-  STX  PUT  spot $965.00  | RV 88%  ATR 8.9%  ign 6  | 1σ move ±$93 (±9.6%)
-      ATM       P960.0     0.5% OTM   ~$   2809/contract   P(ITM)~48.8%
-      1σ        P870.0     9.8% OTM   ~$    333/contract   P(ITM)~10.4%
-      2σ-lotto  P780.0    19.2% OTM   ~$      8/contract   P(ITM)~ 0.4%
+  WDC  PUT  spot $598.37  | RV 119%  ATR 11.1%  ign 6  | 1σ move ±$64 (±10.6%)
+      ATM       P600.0    -0.3% OTM   ~$   2186/contract   P(ITM)~52.9%
+      1σ        P530.0    11.4% OTM   ~$    192/contract   P(ITM)~ 9.1%
+      2σ-lotto  P470.0    21.5% OTM   ~$      4/contract   P(ITM)~ 0.4%
 
-  NVTS  PUT  spot $17.92  | RV 137%  ATR 12.0%  ign 6  | 1σ move ±$3 (±15.0%)
-      ATM       P18.0     -0.4% OTM   ~$     93/contract   P(ITM)~53.8%
-      1σ        P15.0     16.3% OTM   ~$      7/contract   P(ITM)~ 8.5%
-      2σ-lotto  P12.5     30.2% OTM   ~$      0/contract   P(ITM)~ 0.2%
+  HIMS  CALL  spot $37.57  | RV 85%  ATR 7.6%  ign 6  | 1σ move ±$3 (±7.6%)
+      ATM       C38.0      1.1% OTM   ~$     75/contract   P(ITM)~41.7%
+      1σ        C40.0      6.5% OTM   ~$     21/contract   P(ITM)~15.3%
+      2σ-lotto  C43.0     14.5% OTM   ~$      1/contract   P(ITM)~ 1.5%
 
 ========================================================================================================
 READ: ignition ranks momentum capacity, NOT a buy signal. ATM = most delta /
