@@ -86,6 +86,20 @@ WATCHLIST: list[str] = (
     + [ticker for tickers in AI_STACK.values() for ticker in tickers]
 )
 
+# --- Focused scan universe: AI Compute / Semiconductor / IT only ---
+# Narrower than WATCHLIST — excludes broad indices, power-generation utilities
+# (CEG/VST), and all of DIVERSIFICATION (GLP1, travel, financials). Used by
+# --focus on scan_watchlist.py / scan_momentum.py to cut scan time and keep
+# interactive "market analysis" requests pointed at this sector by default.
+FOCUS_AI_SEMI_IT: list[str] = [
+    # AI compute / cloud infra
+    "AVGO", "MRVL", "MU", "NBIS", "SMCI", "DELL", "VRT",
+    # Semiconductor complex
+    "NVDA", "TSM", "ASML", "COHR", "ANET", "CRDO", "NVTS", "MPWR", "STX", "WDC",
+    # Mega-cap IT
+    "MSFT", "AAPL", "AMZN", "META",
+]
+
 # --- Diversification watchlist (non-AI sectors) ---
 DIVERSIFICATION: dict[str, list[str]] = {
     # GLP-1 weight loss drugs — structural multi-year demand tailwind

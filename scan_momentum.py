@@ -250,7 +250,7 @@ def _strike_ladder(row: MomentumRow, dte: int) -> list[tuple[str, float, float, 
     return ladder
 
 
-def scan(direction: Optional[str], dte_override: Optional[int], top: int, log: bool = True):
+def scan(direction: Optional[str], dte_override: Optional[int], top: int, log: bool = True, focus: bool = False):
     provider = get_provider()
     analyzer = TrendAnalyzer()
     rlog = ResearchLog() if log else None
@@ -262,12 +262,16 @@ def scan(direction: Optional[str], dte_override: Optional[int], top: int, log: b
         exp_date, dte = _nearest_friday_dte(today)
         exp_str = exp_date.isoformat()
 
-    tickers = list(dict.fromkeys(
-        config.WATCHLIST + [t for ts in config.DIVERSIFICATION.values() for t in ts]
-    ))
+    if focus:
+        tickers = list(dict.fromkeys(config.FOCUS_AI_SEMI_IT))
+    else:
+        tickers = list(dict.fromkeys(
+            config.WATCHLIST + [t for ts in config.DIVERSIFICATION.values() for t in ts]
+        ))
 
+    scope = "AI/Semi/IT focus" if focus else "full watchlist"
     print(f"\nMomentum / Weekly-Lotto Scan — {today}  |  expiry={exp_str} ({dte} DTE)"
-          f"  |  direction={direction or 'auto'}")
+          f"  |  direction={direction or 'auto'}  |  scope={scope}")
     print("  daily bars only · IVR ignored by design · BS premium via realized-vol proxy")
     print("=" * 104)
 
@@ -335,5 +339,7 @@ if __name__ == "__main__":
                    help="days to expiry; default = nearest Friday weekly")
     p.add_argument("--top", type=int, default=8, help="how many strike ladders to print")
     p.add_argument("--no-log", action="store_true", help="skip writing snapshots to scan_history")
+    p.add_argument("--focus", action="store_true",
+                   help="scan only config.FOCUS_AI_SEMI_IT (AI compute/semiconductor/IT) instead of the full watchlist")
     args = p.parse_args()
-    scan(args.direction, args.dte, args.top, log=not args.no_log)
+    scan(args.direction, args.dte, args.top, log=not args.no_log, focus=args.focus)

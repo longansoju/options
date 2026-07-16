@@ -150,18 +150,22 @@ def entry_score(iv_result, trend_result, direction="bullish") -> tuple[int, str]
     return base + adj, " ".join(flags)
 
 
-def scan_all(direction: str = "bullish", log: bool = True):
+def scan_all(direction: str = "bullish", log: bool = True, focus: bool = False):
     provider = get_provider()
     classifier = IVRankClassifier()
     analyzer = TrendAnalyzer()
     rlog = ResearchLog() if log else None
 
-    tickers = list(dict.fromkeys(
-        config.WATCHLIST
-        + [t for ts in config.DIVERSIFICATION.values() for t in ts]
-    ))
+    if focus:
+        tickers = list(dict.fromkeys(config.FOCUS_AI_SEMI_IT))
+    else:
+        tickers = list(dict.fromkeys(
+            config.WATCHLIST
+            + [t for ts in config.DIVERSIFICATION.values() for t in ts]
+        ))
 
-    print(f"\nDaily Watchlist Scan — {__import__('datetime').date.today()}  |  direction={direction}")
+    scope = "AI/Semi/IT focus" if focus else "full watchlist"
+    print(f"\nDaily Watchlist Scan — {__import__('datetime').date.today()}  |  direction={direction}  |  scope={scope}")
     print("=" * 110)
     fmt = "{:<6} {:>8}  {:>5}  {:>8}  {:>7}  {:>6}  {:>6}  {:>6}  {:>5}  {}"
     print(fmt.format("Symbol", "Price", "IVR", "Regime", "Trend", "Score", "1M%", "3M%", "RSI", "Verdict"))
@@ -267,5 +271,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--direction", default="bullish", choices=["bullish", "bearish"])
     parser.add_argument("--no-log", action="store_true", help="skip writing snapshots to scan_history")
+    parser.add_argument("--focus", action="store_true",
+                        help="scan only config.FOCUS_AI_SEMI_IT (AI compute/semiconductor/IT) instead of the full watchlist")
     args = parser.parse_args()
-    scan_all(args.direction, log=not args.no_log)
+    scan_all(args.direction, log=not args.no_log, focus=args.focus)

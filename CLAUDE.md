@@ -12,6 +12,15 @@ proxy, so all dollar figures are **ballpark, not quotes**.
 - `scan_momentum.py` — weekly/day-trade mode, nearest-Friday weekly (~4 DTE),
   IVR ignored, buy strength (breakouts/breakdowns). `--dte`, `--direction`, `--top`.
 
+**Scan scope (as of 2026-07-16):** for interactive "market analysis" / breadth-scan
+requests, default to **`--focus`** on both scanners — scans only
+`config.FOCUS_AI_SEMI_IT` (21 tickers: AI compute, semiconductor complex, mega-cap
+IT) instead of the full ~47-name watchlist. Faster, fewer yfinance calls, and
+matches the user's stated sector interest. Do NOT add `--focus` to the automated
+GitHub Action cron — it must keep scanning the full watchlist so `scan_history.csv`
+stays a complete dataset for Phase 2 calibration. `--focus` is for on-demand chat
+analysis only.
+
 ## User's trading style — premium trading (frame ALL analysis this way)
 
 The user **profits from premium appreciation and sells before expiry** — they do NOT
