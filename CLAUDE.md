@@ -73,8 +73,8 @@ committed; only local configuration remains, which the user will do when free.
   (127.0.0.1:11111); this cloud session cannot host it.
 - **Unverified** — first local run with OpenD up must sanity-check `options_chain()`
   field names against the moomoo app; fix the mapping if the SDK version differs.
-- Until then paper fills are model-priced; **the MAR paper trade is on hold pending a
-  real quote** (or void it).
+- Until then all paper fills are model-priced (Black-Scholes on realized-vol proxy)
+  — treat every paper premium as an estimate, not a quote.
 
 When the user asks about OpenD, resume from `docs/moomoo_setup.md`.
 
@@ -118,11 +118,24 @@ the `recommendations` / `positions` journal (see `journal/`). Never give new
 picks without first re-checking the old ones.
 
 **Book persistence.** The journal DB is gitignored and ephemeral; the durable book
-is `data/recommendations.csv`. On session start, restore it:
-`python -c "from journal.research_log import ResearchLog as R; R().import_recommendations()"`.
-After ANY book change (open/close a trade), re-export and commit it:
-`python -c "from journal.research_log import ResearchLog as R; R().export_recommendations()"`.
-The daily cron must NOT export this file (its DB is fresh and would clobber the book).
+is `data/recommendations.csv`. **The container can silently reset mid-conversation**
+(this has happened repeatedly — local git state and the local DB both revert to an
+old point with no warning). Because of this, treat "session start" as **"immediately
+before every single book write, no exceptions"**, not literally once per chat:
+
+1. `git fetch` + `git merge --ff-only` (or resolve conflicts) the working branch
+   BEFORE reading or writing the book — confirm the local commit hash actually
+   matches origin, don't assume it does.
+2. `python -c "from journal.research_log import ResearchLog as R; R().import_recommendations()"`
+   — re-run this immediately before EVERY `add_recommendation`/`close_recommendation`
+   call, even if you imported earlier in the same reply. A stale local DB will
+   silently accept the write and then `export_recommendations()` will overwrite the
+   correct CSV with regressed data (lost closures, resurrected "open" positions).
+3. After the write: export, `git add`/commit/push to BOTH branches, then verify by
+   printing the full CSV/DB row list — don't just trust "N recs exported" as proof
+   the state is correct.
+4. The daily cron must NOT export this file (its DB is fresh and would clobber the
+   book).
 
 **Timezone.** User is in Singapore (GMT+8). Precise timestamps (`scan_ts`, `entry_ts`,
 `exit_ts`) are recorded in **SGT with an explicit `+08:00` offset**. Date-key fields
