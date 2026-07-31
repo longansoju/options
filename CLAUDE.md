@@ -21,6 +21,17 @@ GitHub Action cron — it must keep scanning the full watchlist so `scan_history
 stays a complete dataset for Phase 2 calibration. `--focus` is for on-demand chat
 analysis only.
 
+**Earnings-calendar check — mandatory before EVERY new entry, no exceptions.**
+This has already broken two positions: SMCI was opened without checking (caught by
+the user after the fact — earnings landed inside the holding window); AMZN was
+opened hours before its Q2 report and the thesis was destroyed overnight (a
+blowout AWS beat moved the stock 22%+ away from a bearish strike). Before logging
+ANY `add_recommendation` call: check whether the underlying reports earnings
+before the position's expiry. If yes — either skip the entry, or explicitly plan
+to exit before the print (see the existing earnings/IV-timing rule below) and say
+so in the thesis. Never let this be a reactive catch; check it every time,
+proactively, as part of building the entry.
+
 ## User's trading style — premium trading (frame ALL analysis this way)
 
 The user **profits from premium appreciation and sells before expiry** — they do NOT
