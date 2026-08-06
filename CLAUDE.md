@@ -156,6 +156,16 @@ with `scan_ts=07-01T06:47+08:00` — same US session, shown in local time.
 
 ## Trading lessons (do not repeat)
 
+### AVGO specifically is a proven whipsaw trap — extra scrutiny required
+Two separate paper puts on AVGO have now been stopped out (2026-07-21 at -59%,
+2026-08-06 at -85%), both times because AVGO kept climbing right through the
+stop despite a technically clean bearish setup on entry. This name has
+repeatedly shown conflicting bull/bear signals on the same scan day and a
+pattern of recovering hard against whatever position was taken. Before
+re-entering AVGO in either direction: require BOTH a decisive score gap
+(not a close call) AND confirmation the move has actually started on the
+live tape — a clean scan score alone has twice been insufficient here.
+
 ### A momentum-scan candidate is NOT an entry signal
 The momentum scanner's "ignition score" ranks a name's **capacity to move**
 (volatility, volume, recent momentum, proximity to a level) — it does **not** mean
