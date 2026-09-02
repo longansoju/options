@@ -232,3 +232,29 @@ delta AND vega both worked (textbook premium-put).
 Names with extreme realized vol (e.g. MRVL, WDC, SMCI, STX at RV 90-160%) make
 weekly OTM strikes near-worthless coin flips and ATM strikes very expensive — poor
 risk/reward for a premium buyer. Prefer a LEAPS structure for these, not 4-DTE.
+
+### What actually worked: DELL (2026-09-02) — investigate outliers, require convergence
+DELL printed +8.5% on 1.34x volume while the rest of the board was flat-to-down —
+the only fully volume-confirmed move seen in weeks. Instead of trusting the scan
+score alone, the anomaly was investigated directly (WebSearch), which surfaced that
+DELL had actually reported earnings the prior day (a real beat-and-raise: record
+$47B revenue, $60.9B in new AI server orders, $95B backlog, guidance raised $25B) —
+correcting a stale *estimated* earnings date that had been blocking this name from
+recommendation for over a week. The recommendation only went out once multiple
+independent signals converged: real volume (the hardest bar to clear all month),
+a genuine fundamental catalyst (not just a technical flag), and RSI still with room
+(41.6, not yet overbought despite the size of the move).
+
+**Keep doing this on future trades, unless a specific use case says otherwise:**
+1. **An outlier reading is a prompt to investigate, not a number to accept.** A move
+   that stands out from the rest of the board (unusual volume, size, or divergence
+   from the broader tape) means something real likely happened — go find out what
+   via a fresh search before scoring it, rather than trusting a stale assumption
+   (including this system's own prior earnings-date estimates).
+2. **Never act on a single flag alone — require convergence.** Volume confirmation +
+   a genuine fundamental catalyst + technical room (RSI not yet extended) together
+   is what makes a recommendation real. Any one of these alone (a clean scan score,
+   a news headline, an oversold reading) is not sufficient by itself.
+3. **Re-verify "known" facts (especially estimated earnings dates) when the live data
+   stops matching the story** — an assumption that blocked a name last week should be
+   re-checked, not carried forward silently, once the tape contradicts it.
