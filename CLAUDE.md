@@ -68,8 +68,13 @@ real-money trading until the record proves the decisions out. Rules:
   to survive real friction; paper validates direction/timing, not exact premium.
 - **Book separation.** `recommendations.book` = `real` (user's actual fills) |
   `paper` (Claude's trades) | `watch` (pending-trigger candidates).
-- **Exit rules.** Swing: +75% target / −50% stop / exit by 21 DTE. Momentum: +50%
-  target / −50% stop / exit by 2 DTE or end of day. Every exit → a labeled outcome.
+- **Exit rules (recalibrated 2026-09-14 against the 26-trade book).** BOTH
+  strategies: **+50% target on FIRST TOUCH** / −50% stop / **cut on day 2 if the
+  position is red** / swing also exits by 21 DTE, momentum by 2 DTE or EOD.
+  Every exit → a labeled outcome. The +50% target replaced swing's old +75%:
+  backtested, +75% gives back more than it captures (−29.1% vs −24.6% avg).
+  Because the user is GMT+8 and the US session runs overnight, the harvest must
+  be a **resting limit order**, not a discretionary decision made in real time.
 - **Track record:** `ResearchLog.paper_stats()` and `review_positions.py`.
 
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
@@ -203,6 +208,53 @@ precisely *because* it keeps ripping counter-trend rallies. COHR's RSI 44 was
 earned by a +15.5% six-session bounce that it gave back in one day. **A reset
 RSI is only bullish for a short if the reset came from time/consolidation, not
 from a violent counter-rally** — check which one produced it.
+
+### Exits are worth far more than entry scoring (validated 2026-09-14)
+Reconstructed daily premium paths for all 26 closed trades, held every entry
+decision fixed, and varied ONLY the exit rule:
+
+| exit rule | avg PnL | win rate | median |
+|---|---|---|---|
+| what we actually did | −47.3% | 12% | −68.0% |
+| +50% on first touch | −24.6% | 31% | −39.1% |
+| +75% on first touch | −29.1% | 23% | −47.3% |
+| +50% target, cut day 2 if red | −16.4% | 31% | −13.6% |
+| +50% target, −50% stop | **−10.5%** | 31% | −39.1% |
+
+**37 percentage points from exits alone, with zero changes to entries.**
+**8 of 26 trades touched +50% but only 3 were booked as winners — five
+round-trips were handed back.** The "harvest strength" rule already existed and
+simply was not being executed. Before spending more effort on entry selection,
+execute the exit rules; that is where the measurable money is.
+
+Note this does NOT make the system profitable — the best rule is still −10.5%
+average. Entries remain bad. But no entry-scoring tweak tested so far moves the
+number anywhere near this much.
+
+### Rejected experiment — do not rebuild: P(harvest) replacing P(ITM)
+Hypothesis (2026-09-14): P(ITM) asks the wrong question for someone who always
+sells before expiry, so replace it with "probability the premium spikes +50%
+within 3 days" (block-bootstrapped paths, leverage effect modelled). Backtested
+against all 26 labelled trades: **AUC 0.525 vs P(ITM)'s 0.767** — barely better
+than a coin flip, and much worse than the metric it was meant to replace.
+
+It fails because it systematically overscores cheap far-OTM contracts on
+volatile names: a low entry premium makes +50% cheap to touch, and high vol
+makes it touchable in BOTH directions. VST C190 scored 0.418 (near the top) and
+lost 100%; HLT C375 scored 0.344 and lost 57%. **P(ITM) stays as the primary
+discrimination metric.** Do not rebuild this without new evidence.
+
+The general lesson: a plausible narrative about a metric being "the wrong
+question" is a hypothesis, not a finding. Backtest it against the labelled book
+before shipping it — the same convergence standard the DELL rule demands.
+
+### Do not generalise an exit rule from a single trade
+On 2026-09-14 I proposed replacing the −50% premium stop with thesis-invalidation
+stops for long-dated far-OTM structures, reasoning from MPWR alone (n=1), where
+the stop fired two sessions before the thesis paid. The n=26 backtest above
+contradicts it: the −50% premium stop produces the BEST average outcome of any
+rule tested. **Keep the premium stop.** MPWR was the exception, not the rule,
+and one painful trade is not evidence.
 
 ### A momentum-scan candidate is NOT an entry signal
 The momentum scanner's "ignition score" ranks a name's **capacity to move**
