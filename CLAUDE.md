@@ -195,6 +195,17 @@ whipsaw check killed it: **7 up-days >+5% vs 6 down-days >-5%**, avg |daily|
 5.1%, biggest up day +13.4%, and **15 of the last 40 five-day windows contained
 an >8% rally**. That is chop, not a downtrend. Withdrawn before entry.
 
+**Threshold (corrected 2026-09-14):** flag as chop only when
+`(up5 + down5) >= 4 AND |up5 - down5| <= 1`. The activity floor matters — the
+first version omitted it and rejected MSFT/TSM/AMZN/AAPL at 0up/0dn, which are
+the *calmest* names on the board, not whipsawing ones. Implemented in
+`analysis/harvest.py:whipsaw_stats`.
+
+**Validated against the book:** of 26 closed trades the gate flags 6, and **all
+six lost** (avg −64.0%); the 20 survivors won 30% at −7.2% avg. It also lifts
+P(ITM)'s discrimination among survivors from AUC 0.767 to **0.833** — the gate
+and the metric are complementary, not competing.
+
 Reference readings from that same day, for calibration:
 
 | | up>5% | down>5% | avg abs | verdict |
