@@ -166,6 +166,44 @@ re-entering AVGO in either direction: require BOTH a decisive score gap
 (not a close call) AND confirmation the move has actually started on the
 live tape — a clean scan score alone has twice been insufficient here.
 
+### The whipsaw check — run it on EVERY directional entry, before recommending
+The AVGO rule above is reactive: AVGO earned a named rule only after two
+stop-outs. This check catches the next AVGO *before* the first loss, by
+measuring two-way volatility instead of maintaining a list of bad names.
+
+Over the last **30 sessions**, compute for the candidate:
+- count of days **> +5%** vs count of days **< -5%**
+- average absolute daily move
+- how many 5-day windows in the last ~40 sessions contained an **> 8% rally**
+
+**Reject the trade if the up-day and down-day counts are within ~1 of each
+other**, regardless of how clean the scan score is. A name with as many big
+up days as big down days has no directional edge — a directional premium buy
+there is a coin flip with wide dispersion, and the stop gets hit by noise
+before the thesis can resolve.
+
+**What it caught (2026-09-14, COHR):** COHR looked like the best bearish swing
+put on the board — widest bull/bear score gap (14 vs 0), RSI 44 (genuinely NOT
+oversold), 1.84x volume, a real name-specific story (AI-photonics correction
+from a $440 high), earnings confirmed clear. Every convergence leg passed. The
+whipsaw check killed it: **7 up-days >+5% vs 6 down-days >-5%**, avg |daily|
+5.1%, biggest up day +13.4%, and **15 of the last 40 five-day windows contained
+an >8% rally**. That is chop, not a downtrend. Withdrawn before entry.
+
+Reference readings from that same day, for calibration:
+
+| | up>5% | down>5% | avg abs | verdict |
+|---|---|---|---|---|
+| COHR | 7 | 6 | 5.1% | reject — coin flip |
+| VRT  | 1 | 4 | 3.1% | acceptable — directional |
+| MPWR | 0 | 3 | 2.1% | clean trend |
+
+Note the RSI subtlety this surfaced: a name can show a healthy non-oversold RSI
+precisely *because* it keeps ripping counter-trend rallies. COHR's RSI 44 was
+earned by a +15.5% six-session bounce that it gave back in one day. **A reset
+RSI is only bullish for a short if the reset came from time/consolidation, not
+from a violent counter-rally** — check which one produced it.
+
 ### A momentum-scan candidate is NOT an entry signal
 The momentum scanner's "ignition score" ranks a name's **capacity to move**
 (volatility, volume, recent momentum, proximity to a level) — it does **not** mean
