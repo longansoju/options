@@ -141,7 +141,24 @@ before every single book write, no exceptions"**, not literally once per chat:
 
 1. `git fetch` + `git merge --ff-only` (or resolve conflicts) the working branch
    BEFORE reading or writing the book — confirm the local commit hash actually
-   matches origin, don't assume it does.
+   matches origin, don't assume it does. **Then immediately push the merge
+   result back**, even though it contains none of your own work:
+
+   ```
+   git fetch origin
+   git merge --ff-only origin/claude/planning-session-ipr02p
+   git push origin claude/available-branches-2999s4      # do NOT skip this
+   git rev-parse HEAD origin/claude/available-branches-2999s4 \
+       origin/claude/planning-session-ipr02p             # all three must match
+   ```
+
+   Why the push is part of the sync and not an afterthought: the cron commits
+   its snapshots to the CANONICAL branch only. Merging pulls those into the
+   working branch, which leaves the working branch ahead of its own remote by
+   commits you did not author — so the Stop hook fires "N unpushed commits" at
+   the end of the turn and the sync has to be redone. This recurred on three
+   consecutive sessions (2026-09-14, 09-15, 09-16) before being folded in here.
+   Finish the sync with all three refs equal, every time.
 2. `python -c "from journal.research_log import ResearchLog as R; R().import_recommendations()"`
    — re-run this immediately before EVERY `add_recommendation`/`close_recommendation`
    call, even if you imported earlier in the same reply. A stale local DB will
