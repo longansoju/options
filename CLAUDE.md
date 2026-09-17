@@ -259,6 +259,37 @@ Note this does NOT make the system profitable — the best rule is still −10.5
 average. Entries remain bad. But no entry-scoring tweak tested so far moves the
 number anywhere near this much.
 
+### The exit rules proved out LIVE, not just in backtest (2026-09-14 → 09-17)
+Seven Sep18 weeklies were logged as `watch` on 09-14 to make a skip call
+falsifiable. Resolved 09-17 at the 2-DTE time-stop: **$1,156 → $92, −92.0%.**
+The skip call was right.
+
+**But it was right for the wrong reason, and that is the lesson.** Two of the
+seven were genuine winners at their peak:
+
+| | peak | at close | |
+|---|---|---|---|
+| AMZN P250 | **+334.9%** | −34.6% | round-tripped from deep ITM |
+| AVGO P335 | **+103.4%** | −99.1% | round-tripped to near zero |
+
+Both cleared the +50% harvest threshold days before expiring worthless. Apply
+the recalibrated rules (+50% first touch / −50% stop) to the SAME seven entries
+and the basket returns **−33.3% instead of −92.0% — 59 percentage points from
+exit discipline alone, with zero entry changes.** This is the backtest finding
+reproducing in live data within three days of being written down.
+
+What actually happened: FOMC on 09-16 hiked 25bp to 3.75–4.00% (12–0) with a
+hawkish dot plot (16 of 18 expecting another hike). Stocks sold off on the
+decision — puts worked — then reversed hard on 09-17 (QQQ +1.68%, SMCI +8.7%,
+MU +5.7%), which killed every put. **A two-day window contained both the win
+and the total loss.** Nothing about entry selection could have captured that;
+only an exit rule could.
+
+**Operative rule:** the +50% harvest is not advice, it is a RESTING LIMIT ORDER
+placed at entry. The user is GMT+8 — AMZN's peak and its round-trip both
+happened while they were asleep. A harvest that depends on watching the tape is
+not a rule, it is a wish.
+
 ### Rejected experiment — do not rebuild: P(harvest) replacing P(ITM)
 Hypothesis (2026-09-14): P(ITM) asks the wrong question for someone who always
 sells before expiry, so replace it with "probability the premium spikes +50%
