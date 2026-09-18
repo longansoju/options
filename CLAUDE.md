@@ -237,6 +237,38 @@ earned by a +15.5% six-session bounce that it gave back in one day. **A reset
 RSI is only bullish for a short if the reset came from time/consolidation, not
 from a violent counter-rally** — check which one produced it.
 
+### The counter-trend check — never fade a live bounce (validated 2026-09-18)
+Structure and RSI gates are both blind to short-term counter-trend momentum. A
+name can be in a clean downtrend, not oversold, not choppy — and still be three
+days into a bounce that runs further. Buying a put into that is the 2026-06-29
+error, and the whipsaw gate does not catch it.
+
+**The rule:** reject a PUT if the trailing 3 sessions are net POSITIVE; reject a
+CALL if net NEGATIVE. Implemented in `analysis/harvest.py:counter_trend`.
+
+**Validated on the 33-trade book:** 3d>0% flags 11 entries and **all eleven
+lost** (avg −70.4%). **No winner is flagged at ANY tested threshold** (2d/3d/5d
+× 0/1/2/3%) — it is close to a pure loser-filter. Combined with the whipsaw gate:
+
+| | n | win rate | avg PnL |
+|---|---|---|---|
+| whipsaw gate alone | 27 | 22% | −28.1% |
+| **both gates** | 21 | **29%** | **−12.3%** |
+| fails either | 12 | **0%** | −73.7% |
+
+**What it caught (2026-09-18, AVGO):** AVGO ranked #1 on the weekly list at
+39.7% P(ITM) — passed whipsaw (0up/1dn), passed RSI (43.4), sat −6.4% below
+MA50. But it had bounced +4.8% in three sessions off a defended 20-day low at
+$335.81, with RSI 44 leaving room to run up. The user asked "why can't Broadcom
+climb?" and the answer was: it already was. The put was fading a live bounce.
+
+**The wider catch mattered more than the name.** Re-gating the whole board that
+day rejected EVERY put — AVGO, VRT, ASML, NVTS, MPWR, WDC, CRDO, AMZN — because
+the entire complex had bounced 2-16% in three days. The top recommendation (VRT,
+0up/4dn, the cleanest directional profile measured all week) was +6.41% over
+three sessions. An entire recommendation set was fading one market-wide rally
+and nothing in the existing gates saw it.
+
 ### Exits are worth far more than entry scoring (validated 2026-09-14)
 Reconstructed daily premium paths for all 26 closed trades, held every entry
 decision fixed, and varied ONLY the exit rule:

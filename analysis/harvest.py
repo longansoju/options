@@ -78,18 +78,37 @@ def rsi(s: pd.Series, n: int = 14) -> pd.Series:
     return 100 - 100 / (1 + up / dn)
 
 
+def counter_trend(close: pd.Series, kind: str, lookback: int = 3) -> dict:
+    """Is the name currently moving AGAINST the trade we are about to put on?
+
+    Validated gate: on the 33-trade book, 3d>0% flags 11 entries and ALL
+    ELEVEN LOST (avg −70.4%). No winner is flagged at any tested threshold.
+    Structure and RSI gates are both blind to this — a name can be in a clean
+    downtrend, not oversold, not choppy, and still be three days into a bounce
+    that runs further. AVGO on 2026-09-18 was exactly that.
+    """
+    if len(close) < lookback + 1:
+        return {"ret": 0.0, "fade": False}
+    ret = (float(close.iloc[-1]) / float(close.iloc[-1 - lookback]) - 1) * 100
+    fade = (kind == "put" and ret > 0) or (kind == "call" and ret < 0)
+    return {"ret": ret, "fade": fade}
+
+
 def gate(close: pd.Series, kind: str, earnings_clear: bool) -> dict:
     """Hard gates only — no tunable weights, no entry verb.
 
     A trigger is confirmed on the live tape, never here.
     """
     w = whipsaw_stats(close)
+    ct = counter_trend(close, kind)
     r = float(rsi(close).iloc[-1])
     blocks = []
     if not earnings_clear:
         blocks.append("earnings inside window")
     if w["chop"]:
         blocks.append(f"whipsaw {w['up5']}up/{w['down5']}dn")
+    if ct["fade"]:
+        blocks.append(f"counter-trend 3d {ct['ret']:+.1f}%")
     if kind == "put" and r < 32:
         blocks.append(f"RSI {r:.0f} oversold")
     if kind == "call" and r > 70:
@@ -97,6 +116,7 @@ def gate(close: pd.Series, kind: str, earnings_clear: bool) -> dict:
     return {
         "rsi": r,
         "whipsaw": w,
+        "counter_trend": ct,
         "blocks": blocks,
         "verdict": "REJECT" if blocks else "WATCH — pending trigger",
     }
