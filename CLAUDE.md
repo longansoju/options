@@ -62,7 +62,8 @@ real-money trading until the record proves the decisions out. Rules:
   force trades to hit a target count — forcing corrupts the experiment and is itself
   a failure mode.
 - **Entry discipline applies** (see momentum lesson): confirmed trigger only, flag
-  mean-reversion risk, size tiny, 1σ strike on weeklies.
+  mean-reversion risk, size tiny, **0.3-0.6σ strike** (NOT 1σ — see the strike-
+  distance lesson; >1σ is 0-for-10 in the book).
 - **Honest pricing caveat.** No live chain — paper fills are Black-Scholes at the
   realized-vol proxy, with NO slippage or spread. A paper edge must be robust enough
   to survive real friction; paper validates direction/timing, not exact premium.
@@ -237,6 +238,37 @@ earned by a +15.5% six-session bounce that it gave back in one day. **A reset
 RSI is only bullish for a short if the reset came from time/consolidation, not
 from a violent counter-rally** — check which one produced it.
 
+### Strike distance is the biggest single lever — and 1σ was too far
+Measure moneyness in SIGMA units, `|ln(K/S)| / (RV·√T)`, never in percent. "2%
+OTM" means nothing when RV ranges from 21% (MSFT) to 129% (NBIS) across the
+watchlist — the same 2% is a coin flip on one and a lottery ticket on the other.
+
+Every closed trade in the book, bucketed by sigma-moneyness at entry:
+
+| bucket | n | win rate | avg PnL |
+|---|---|---|---|
+| 0.0-0.4σ | 3 | 33% | **+46.6%** |
+| 0.4-0.7σ | 11 | 27% | −7.4% |
+| 0.7-1.0σ | 9 | 22% | −45.1% |
+| **>1.0σ** | 10 | **0%** | **−79.6%** |
+
+Perfectly monotonic, and **>1σ is 0-for-10.** Winners averaged 0.60σ, losers
+0.95σ. Combined with the whipsaw gate (σ<0.7 AND not chop): **n=10, 40% win,
++31.1% avg** — the first positive-expectancy subset found in the whole book,
+against −63.2% for everything else.
+
+**This invalidated the old "default to the 1σ strike" rule**, which had been
+applied to every weekly list produced this week — i.e. every one of them was
+priced in the 0-for-10 bucket. Use **0.3-0.6σ**. It costs 2-4x more per
+contract; size down rather than strike out.
+
+**Caveat, stated honestly:** the +31.1% average rests on NBIS +333% and AVGO
++300%; the median of that bucket is still −42.3%. This is a fat-tailed
+"a few big winners pay for many small losers" profile, which is what long
+premium should look like — and it only works if the +50% harvest is actually
+executed as a resting order. Strike selection and exit discipline are the same
+trade.
+
 ### The counter-trend check — never fade a live bounce (validated 2026-09-18)
 Structure and RSI gates are both blind to short-term counter-trend momentum. A
 name can be in a clean downtrend, not oversold, not choppy — and still be three
@@ -367,7 +399,8 @@ already decayed 8→6 and its 5-day return improved -6%→-4.3% (momentum rollin
 3. Chasing a directional short-dated option *after* an extended move in that
    direction = buying into likely mean reversion. Flag this risk explicitly.
 4. Short-dated (≤7 DTE) options bleed theta hard and must be confirmed + exited
-   fast + sized tiny. Default to the 1σ strike, never the 2σ "lotto" strike.
+   fast + sized tiny. **Strike: 0.3-0.6σ.** (This previously said "default to the
+   1σ strike" — corrected 2026-09-18, the data says 1σ is already too far out.)
 
 ### Output discipline — never let a scan line become a verb
 **What went wrong (2026-06-30):** off the momentum scan I wrote "the only two I'd
