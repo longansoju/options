@@ -371,6 +371,77 @@ The general lesson: a plausible narrative about a metric being "the wrong
 question" is a hypothesis, not a finding. Backtest it against the labelled book
 before shipping it — the same convergence standard the DELL rule demands.
 
+### Week of 2026-09-21 → 09-25 (MU): what was missed, and what was actually a mistake
+The user flagged missed opening spikes: **MU260925C01100000 on 09-25** and
+**MU260925C01120000 on 09-23**. Both are real in hindsight. Model reconstruction
+(BS at RV 55%, entry at the open print):
+
+| date | contract | spike | then |
+|---|---|---|---|
+| 09-25 | C1100 (0DTE) | **+53% at 09:35** (5 min in) | −60% by 10:21 |
+| 09-25 | C1110 (0DTE) | +61% at 09:35 | −65% by 10:21 |
+| 09-23 | C1120 (2DTE) | +13% at 09:30 (first-minute high) | −53% by 10:27 |
+| 09-24 | C1062 (1DTE) | +32% at 09:47; **+72% by the close** | blocked by counter-trend |
+
+The model shows the 09-23 C1120 spike as only +13% — the user saw a larger one on
+the real chain. That gap is itself a finding: **the Black-Scholes-at-RV proxy
+cannot see opening IV behaviour.** Until the moomoo chain is live, opening-spike
+sizes from this system are understated and unverifiable.
+
+**Is the opening spike a missed SIGNAL, or hindsight? Backtested before writing
+a rule** (609 name-days, 21 focus names, 29 sessions 08-17→09-25, 2-min bars;
+buy the 0.3σ Friday weekly at the close of the first 2-min bar, resting +50%
+limit, −30% stop, 10:00 time-stop; conservative same-bar fills):
+
+| entry condition | n | win | avg | median |
+|---|---|---|---|---|
+| calls, every open | 609 | 46% | +2.4% | −3.1% |
+| gap up >0.5% + first bar up | 121 | 45% | +3.5% | −4.6% |
+| gap up, within 2% of 20d high (the 09-25 setup) | 33 | 48% | +3.8% | −1.3% |
+| puts, every open | 609 | 44% | +0.3% | −3.6% |
+| straddle (both legs) | 609 | 47% | +1.3% | −0.4% |
+| MU calls only | 29 | 48% | +4.7% | −1.7% |
+
+**Zero-expectancy before friction, negative after it:** calls go to −1.6% with a
+4% round-trip spread and −5.6% at 8% — and opening spreads on weeklies are often
+wider than that. The spike is real and frequent (calls touch +50% on 21% of
+opens, puts on 15%) but **it never happened on both sides the same day, and no
+feature tested at 09:32 — gap direction, first-bar direction, proximity to the
+20-day high — predicts which side.** The two named misses were drawn from a
+population where the symmetric trade touched just as often. On MU this week the
+blind rule would have gone +50/+50 on 09-22/09-25 and −8/−9/−3 on the other
+three days: a good week, from a rule that is flat over 60 days.
+
+**Do not build an "opening-spike scalp" rule** without new evidence — and the
+evidence that would justify it is a real opening chain (moomoo), not this model.
+
+**What WAS a mistake this week — keep these:**
+1. **Confirmation structurally arrives after the opening harvest window.** On 09-23
+   and 09-25 MU spiked into the 20-day high, and the "break" peaked within 1-9
+   minutes then round-tripped −53% to −65%. The confirmation rule correctly
+   refused to chase both — but on a gap-up into a level, *the confirmation print
+   was the top.* Waiting for break-and-hold is right for entries; it is not a way
+   to capture opens, and nothing should be claimed otherwise.
+2. **The counter-trend gate flipped sides three sessions running** (3d +11.98% →
+   −4.25% → +3.32%). A 3-day lookback on a 54%-RV name is too short to be stable;
+   it blocked the 09-24 call (+72%) purely on the flip. Phase 2: test a longer
+   lookback or an RV-scaled threshold before trusting it on high-vol names.
+3. **Gate scoreboard, three blocked MU puts:** 09-22 would have won, 09-23 would
+   have won (touched +50%), 09-24 lost 100%. 1-for-3. The separating variable was
+   *which side volume confirmed* (09-24 volume confirmed the upside at 1.10x+).
+   That directional-volume test is the Phase 2 hypothesis — not loosening gates.
+4. **The one harvest that WAS available went unexecuted.** The 09-23 P1075
+   touched +50% at 10:23 ET for one five-minute bar, then decayed to +12%. Same
+   lesson as the 09-14 basket: without a resting limit placed at entry, a +50%
+   print is not realisable from GMT+8.
+5. **Data/monitor errors (all caught, all fixed):** a stale daily feed reported
+   MU "+3.66%" pre-market when it was −1.0% (always rebuild prior close from
+   intraday bars); the monitor's premium baseline and emit-filter state both reset
+   on 30-min re-arms, once mislabelling a genuine new low as "nothing to report"
+   (both now persist to disk); and the 10-min volume rate reads ~1.00x by
+   construction in the first ~10 minutes — **never report opening volume as
+   confirmation until it is measured against the same window over 20 sessions.**
+
 ### Do not generalise an exit rule from a single trade
 On 2026-09-14 I proposed replacing the −50% premium stop with thesis-invalidation
 stops for long-dated far-OTM structures, reasoning from MPWR alone (n=1), where
