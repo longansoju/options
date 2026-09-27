@@ -11,6 +11,12 @@ proxy, so all dollar figures are **ballpark, not quotes**.
   buy dips / mean-reversion. `--direction bullish|bearish`.
 - `scan_momentum.py` — weekly/day-trade mode, nearest-Friday weekly (~4 DTE),
   IVR ignored, buy strength (breakouts/breakdowns). `--dte`, `--direction`, `--top`.
+- `scan_events.py` — event & volatility radar (`analysis/event_radar.py`). Forecasts
+  WHEN a big move is likely, never which way. `--mode open` pre-market (09:15-09:28
+  ET = 21:15-21:28 SGT): P(0.3σ weekly call / put touches +50% in the first hour).
+  `--mode close`: P(next open gaps > 1 gap-sd up / down) + FOMC-night flag.
+  `--refit` re-fits (weekly is plenty). Output is always "watch — volatility radar".
+  See the lesson "Timing is forecastable, direction is not".
 
 **Scan scope (as of 2026-07-16):** for interactive "market analysis" / breadth-scan
 requests, default to **`--focus`** on both scanners — scans only
@@ -441,6 +447,45 @@ evidence that would justify it is a real opening chain (moomoo), not this model.
    (both now persist to disk); and the 10-min volume rate reads ~1.00x by
    construction in the first ~10 minutes — **never report opening volume as
    confirmation until it is measured against the same window over 20 sessions.**
+
+### Timing is forecastable, direction is not — the event radar (built 2026-09-27)
+The user asked for a system to predict moves like MRVL's +5.8% gap after the
+2026-09-16 FOMC and MU's +53% opening call spike on 09-25. Built and validated
+walk-forward (each test period scored by a model fitted only on earlier data):
+
+| model | data | OOS AUC | top decile vs base |
+|---|---|---|---|
+| overnight big gap UP (> 1 gap-sd) | 10y daily, 21 names | 0.597 | 20.9% vs 11.9% |
+| overnight big gap DOWN | same | 0.578 | 14.8% vs 9.9% |
+| open: call touches +50% in 1st hour | 2y hourly + pre-market | 0.585 | 36.1% vs 25.7% |
+| open: put touches +50% | same | 0.612 | 41.9% vs 25.3% |
+| **open: which side wins** | same | **0.514** | 52.7% vs 49.6% |
+| **overnight: expected gap (direction)** | 10y | **rank-IC +0.022**, flips sign by year | top decile +0.26% vs bottom +0.10% |
+
+**Big-move days are forecastable (volume, range, event nights drive it); which
+way they break is not.** Up- and down-tail odds rise together on flagged days.
+On the user's own examples: MRVL/MU 09-16 close scored 90th-93rd percentile for a
+big gap up (it came); MRVL 09-17 open scored 90th percentile for a call spike (it
+came); MU 09-25 open scored an ordinary 47th percentile (missed); the direction
+lean was wrong on MU 09-24 and MRVL 09-21. Do not present the lean as a signal.
+
+**Model option P&L on flagged nights is optimistic.** On nights the overnight
+model flags, realized gaps run ~1.28x what RV30 implies; the real market prices
+part of that in. Simulated overnight straddles showed +10% — treat that as a
+pricing artifact until a real chain (moomoo) says otherwise. Underlying-move
+probabilities are unaffected.
+
+**FOMC nights (event-level, avg across names, one row per decision):** 2024-26
+next open averaged **+1.22%, 73% up (n=22)** vs +0.22% on normal nights (p≈0.002
+vs random nights). **2017-23: no effect (n=40).** Regime-dependent — the radar
+flags it; it is not a rule. Forward-test it: log FOMC nights as `watch` rows.
+Next decision on the schedule: **2026-10-28** (same evening as MSFT's report).
+
+**Execution constraint:** the US close is 04:00 SGT, so the overnight trade needs
+the user awake or a pre-placed order; the open radar (21:15-21:28 SGT) fits the
+user's evening. **Use:** deciles 9-10 on the open radar = be ready with a resting
++50% limit on anything already held, and don't open fresh short-dated premium
+into a flagged open without a plan for either direction.
 
 ### Do not generalise an exit rule from a single trade
 On 2026-09-14 I proposed replacing the −50% premium stop with thesis-invalidation
