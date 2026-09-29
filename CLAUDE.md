@@ -83,6 +83,21 @@ real-money trading until the record proves the decisions out. Rules:
   Because the user is GMT+8 and the US session runs overnight, the harvest must
   be a **resting limit order**, not a discretionary decision made in real time.
 - **Track record:** `ResearchLog.paper_stats()` and `review_positions.py`.
+- **Autonomous paper mode (authorized by the user 2026-09-29).** During monitored
+  sessions Claude takes paper trades on its OWN rules without asking — confirmed
+  trigger (20d level held ≥10 consecutive 1m closes, right side of VWAP, day relvol
+  ≥1.0x same-clock-time), all gates pass (whipsaw, counter-trend, RSI, earnings before
+  expiry), nearest-Friday weekly at 0.3-0.6σ, 1 contract, model premium ≤ $1,000 (the
+  user's budget, so the paper book stays relevant to what they can trade). Exits are
+  the standard rules above. A live engine emits PAPER ENTRY / PAPER EXIT signals;
+  every book write still follows the Session-routine protocol. Still never forced:
+  a quiet tape produces no trades, and that is the correct outcome.
+- **Learning loop.** Every live forecast is scored against the realized outcome and
+  logged (next-5m range/direction, session-close estimates). Measured so far: 5-min
+  DIRECTION is a coin flip (OOS hit 51.0-51.2% on 31k bars; adding SMH lead-lag and
+  relative strength changed nothing, AUC 0.512); the 5-min RANGE is forecastable
+  (raw band covered 72.7% vs 68% target → scaled 0.91, then self-calibrates live).
+  Findings that hold up get written into the lessons below; ones that don't, don't.
 
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
