@@ -99,6 +99,31 @@ real-money trading until the record proves the decisions out. Rules:
   (raw band covered 72.7% vs 68% target → scaled 0.91, then self-calibrates live).
   Findings that hold up get written into the lessons below; ones that don't, don't.
 
+- **Day-trade practice mode (requested by the user 2026-10-05).** Paper only,
+  `strategy=daytrade`, flat by the close, kept separate from swing/momentum stats.
+  Engine: `daytrade_engine.py` (scratchpad). Rule: 30-min opening-range break held
+  ≥10 consecutive 1m closes (10:00-15:00 ET), right side of VWAP, relvol ≥1.0x
+  same-clock, all gates (whipsaw, counter-trend, RSI, earnings before expiry);
+  vehicle = NEXT week's Friday at 0.3-0.6σ, 1 contract, ≤ $1,000; exits **+30% /
+  −30% / 15:45 ET**; max 3 entries per day, one per name. **The backtest says this
+  loses** (60 sessions, 21 names, 5m bars, BS at RV30):
+
+  | variant (gated) | n | win | avg | after 4% spread |
+  |---|---|---|---|---|
+  | 20d break, weekly, ±50% | 56 | 29% | −16.1% | −20.1% |
+  | OR break, weekly, ±50% | 127 | 26% | −16.4% | −20.4% |
+  | OR break, weekly, ±30% | 127 | 34% | −7.7% | −11.7% |
+  | **OR break, next-week expiry, ±30% (chosen)** | 127 | 31% | **−6.9%** | −10.9% |
+
+  Two separate causes. (1) **The underlying has no continuation edge intraday:**
+  entry→15:45 in the break direction averaged −0.18% (OR, t −1.2) and −0.25% (20d,
+  t −0.9); breakouts mildly mean-revert into the close, not significantly. (2)
+  **Theta:** the same entries priced on the following week's expiry lose roughly
+  half as much (−8.4% vs −16.4% at ±50%). Do NOT flip to a "fade the breakout" rule
+  on that t-stat after testing a dozen variants — that is data-mining. This mode is
+  a forward test to collect labelled intraday trades and to compare against the real
+  moomoo chain later, not a claimed edge. Re-evaluate at n≥30 day trades.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace
