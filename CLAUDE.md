@@ -146,6 +146,21 @@ real-money trading until the record proves the decisions out. Rules:
   later — a test artifact; caught and replaced with a max-hold rule. Check every
   "improvement" for this kind of leak before adopting it.
 
+  **Universe expansion (user request 2026-10-06: "slowly").** Day-trade universe =
+  focus 21 + `config.DAYTRADE_EXPANSION`, added in batches of ~5. Admission is
+  STRUCTURAL only: 20d avg dollar volume ≥ $1.5B, a 0-0.4σ two-week strike fits
+  $1,000, prefer sectors outside AI/semis (10-06 showed three entries in 11 minutes
+  that were one correlated tech bet). Never admit or drop a name on its own backtest
+  P&L — ~5 trades per name is noise. Expansion names need a verified date in
+  `config.DAYTRADE_EARNINGS` or they are not traded. Batch 1 (10-06): GOOGL, PLTR,
+  JPM, XOM, V. Next batch only after batch 1 has traded for a week without data or
+  gate problems. Candidates screened and waiting: QCOM, NFLX, KLAC, MA, UBER, AXP.
+  Failed the budget screen (2-week 0.2σ call > $1,000): TSLA, AMD, AMAT, LRCX, LLY,
+  GS, CAT, COIN, ARM, CEG.
+  Bug fixed the same day: the earnings gate blocked any date ≤ expiry, including
+  dates already PAST (JPM would have stayed blocked after its 10-13 report). Now
+  blocks only `today ≤ earnings ≤ expiry`.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace

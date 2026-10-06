@@ -100,6 +100,25 @@ FOCUS_AI_SEMI_IT: list[str] = [
     "MSFT", "AAPL", "AMZN", "META",
 ]
 
+# --- Day-trade universe expansion (added in small batches, 2026-10-06 onward) ---
+# Admission is STRUCTURAL only (never by backtest P&L per name - too few trades,
+# that would be cherry-picking): 20-day avg dollar volume >= $1.5B (deep option
+# markets), a 0-0.4 sigma two-week strike fits the $1,000 budget, and preference
+# for sectors OUTSIDE AI/semis so day-trade entries are not one correlated bet.
+# Verified next-earnings dates live in DAYTRADE_EARNINGS; a name with no verified
+# date is not traded. Batch 1 (2026-10-06):
+DAYTRADE_EXPANSION: list[str] = ["GOOGL", "PLTR", "JPM", "XOM", "V"]
+DAYTRADE_EARNINGS: dict[str, str] = {
+    # focus names reporting inside the current windows (verified 10-05/10-06)
+    "ASML": "2026-10-14", "TSM": "2026-10-15", "VRT": "2026-10-21",   # VRT: sources say 10-21 or 10-28
+    "MSFT": "2026-10-28", "AMZN": "2026-10-29", "ANET": "2026-11-02",
+    "NVDA": "2026-11-17", "AVGO": "2026-12-10",
+    # batch 1
+    "GOOGL": "2026-10-28", "JPM": "2026-10-13", "V": "2026-10-27",
+    "XOM": "2026-10-09",    # sources say 10-09 or 10-30: take the earlier
+    "PLTR": "2026-11-02",   # sources say 11-02 or 11-09: take the earlier
+}
+
 # --- Diversification watchlist (non-AI sectors) ---
 DIVERSIFICATION: dict[str, list[str]] = {
     # GLP-1 weight loss drugs — structural multi-year demand tailwind

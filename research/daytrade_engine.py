@@ -16,11 +16,10 @@ import numpy as np, pandas as pd, config
 from analysis import event_radar as er
 config.YF_INTER_CALL_DELAY = 0.2
 
-SYMS = config.FOCUS_AI_SEMI_IT
+SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 TODAY = pd.Timestamp.now(tz='America/New_York').date()
 EXPIRY = TODAY + dt.timedelta(days=(4 - TODAY.weekday()) % 7 + 14)      # Friday two weeks out (pen-test 10-06)
-EARN = {'ASML': dt.date(2026, 10, 14), 'TSM': dt.date(2026, 10, 15),    # verified 10-05
-        'VRT': dt.date(2026, 10, 21)}                                    # sources say 10-21 or 10-28: take the earlier
+EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}   # verified dates (config.py)
 BUDGET, TGT, STOP, MAXN, MAXHOLD = 1000.0, 0.20, 0.20, 3, 120   # pen-test 10-06
 PRE = pd.read_pickle('sweep_pre.pkl')
 ST = f'dt_state_{TODAY}.json'
@@ -63,7 +62,8 @@ def gates(p, kind, sym):
     if kind == 'put' and p['ct3'] > 0: b.append(f"counter-trend 3d {p['ct3']:+.1f}%")
     if kind == 'call' and p['rsi'] > 70: b.append(f"RSI {p['rsi']:.0f}")
     if kind == 'put' and p['rsi'] < 32: b.append(f"RSI {p['rsi']:.0f}")
-    if EARN.get(sym) and EARN[sym] <= EXPIRY: b.append(f"earnings {EARN[sym]} before {EXPIRY}")
+    if EARN.get(sym) and TODAY <= EARN[sym] <= EXPIRY: b.append(f"earnings {EARN[sym]} before {EXPIRY}")
+    if sym in config.DAYTRADE_EXPANSION and sym not in EARN: b.append('no verified earnings date')
     return b
 
 
