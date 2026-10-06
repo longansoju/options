@@ -191,6 +191,11 @@ Every recommendation must (1) state which **strategy** it belongs to — SWING
 ~4 DTE) — (2) end with a short **summary**, and (3) give the **actual OCC option
 contract code**, not just "BKNG C192.5".
 
+**Trade reports (user request 2026-10-06):** every entry, exit and book summary
+shows the **entry date + stock price + premium** and the **exit date + stock price +
+premium**, not just the P&L %. `exit_ts` is the time the RULE fired (e.g. 15:45 ET),
+never the time the row was logged.
+
 OCC format: `{ROOT}{YYMMDD}{C|P}{strike×1000, zero-padded to 8 digits}`.
 Example: BKNG $192.50 call expiring 2026-07-03 → `BKNG260703C00192500`.
 
