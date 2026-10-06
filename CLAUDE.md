@@ -124,6 +124,28 @@ real-money trading until the record proves the decisions out. Rules:
   a forward test to collect labelled intraday trades and to compare against the real
   moomoo chain later, not a claimed edge. Re-evaluate at n≥30 day trades.
 
+  **Pen-test 2026-10-06 (`research/pentest_dt.py`) — rules changed.** 31 one-at-a-
+  time variants + gate ablations, sessions split 20 in-sample / 20 out-of-sample
+  (from 09-08), all after a 4% spread. ADOPT only if better in BOTH halves.
+  Baseline −13.3% IS / −9.6% OOS. Passed: closer strike (0.0σ −10.8/−7.2), 2-week
+  expiry (−10.3/−6.8), ±20% exits (−8.3/−7.6). **Gates confirmed on intraday data:**
+  removing whipsaw (−14.2/−10.7), counter-trend (−12.9/−12.2) or all gates
+  (−12.6/−12.0) is worse OOS; 5d counter-trend no better than 3d; RSI gate neutral.
+  No entry filter helped (hold length, OR length, relvol, VWAP, entry window).
+  Combined (0-0.4σ, 2-week expiry, ±20%, max hold 120m): −6.3% IS / −5.7% OOS,
+  **−1.9% before spread.** **New day-trade rules:** strike nearest 0.2σ within
+  0-0.4σ and ≤ $1,000; Friday two weeks out; **+20% / −20% / 120-min max hold /
+  15:45**; gates unchanged.
+
+  **What the pen-test actually says — read before claiming progress:** every
+  improvement came from REDUCING EXPOSURE (less theta, shorter holds, smaller
+  targets), and the loss shrinks toward −spread as exposure shrinks (60-min max hold:
+  −1.1% before spread). That is the signature of NO ENTRY EDGE: the best rule is the
+  one that holds least. Losing less is not winning. Also: a 12:30 clock time-stop
+  with entries until 15:00 looked good only because late entries were closed one bar
+  later — a test artifact; caught and replaced with a max-hold rule. Check every
+  "improvement" for this kind of leak before adopting it.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace

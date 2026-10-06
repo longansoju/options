@@ -18,9 +18,10 @@ config.YF_INTER_CALL_DELAY = 0.2
 
 SYMS = config.FOCUS_AI_SEMI_IT
 TODAY = pd.Timestamp.now(tz='America/New_York').date()
-EXPIRY = TODAY + dt.timedelta(days=(4 - TODAY.weekday()) % 7 + 7)       # next week's Friday
-EARN = {'ASML': dt.date(2026, 10, 14), 'TSM': dt.date(2026, 10, 15)}    # verified 10-05; others report later
-BUDGET, TGT, STOP, MAXN = 1000.0, 0.30, 0.30, 3
+EXPIRY = TODAY + dt.timedelta(days=(4 - TODAY.weekday()) % 7 + 14)      # Friday two weeks out (pen-test 10-06)
+EARN = {'ASML': dt.date(2026, 10, 14), 'TSM': dt.date(2026, 10, 15),    # verified 10-05
+        'VRT': dt.date(2026, 10, 21)}                                    # sources say 10-21 or 10-28: take the earlier
+BUDGET, TGT, STOP, MAXN, MAXHOLD = 1000.0, 0.20, 0.20, 3, 120   # pen-test 10-06
 PRE = pd.read_pickle('sweep_pre.pkl')
 ST = f'dt_state_{TODAY}.json'
 
@@ -44,14 +45,14 @@ def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 200 e
 def pick(sym, S, kind, ts, rv):
     T = T_at(ts); sd = rv * math.sqrt(T); step = inc(S); sg = 1 if kind == 'call' else -1
     best = None
-    for f in (0.3, 0.4, 0.5, 0.6):
+    for f in (0.0, 0.1, 0.2, 0.3, 0.4):
         K = round(S * math.exp(sg * f * sd) / step) * step
         sig = abs(math.log(K / S)) / sd
-        if not 0.3 <= sig <= 0.6: continue
+        if sig > 0.4: continue
         prem = bs(S, K, T, rv, kind) * 100
         if prem <= BUDGET:
             c = dict(K=K, prem=prem, sig=sig, occ=f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}")
-            if best is None or abs(sig - 0.4) < abs(best['sig'] - 0.4): best = c
+            if best is None or abs(sig - 0.2) < abs(best['sig'] - 0.2): best = c
     return best
 
 
@@ -96,6 +97,8 @@ while True:
                 best = bs(r.H if kind == 'call' else r.L, K, T, rv, kind) * 100
                 if worst <= e * (1 - STOP): reason, exitp, ref = f'-{STOP:.0%} stop', e * (1 - STOP), ts; break
                 if best >= e * (1 + TGT): reason, exitp, ref = f'+{TGT:.0%} target (resting limit)', e * (1 + TGT), ts; break
+                if (ts - pd.Timestamp(p['ts'])).total_seconds() >= MAXHOLD * 60:
+                    reason, exitp, ref = f'{MAXHOLD}-min max-hold time stop', bs(r.C, K, T, rv, kind) * 100, ts; break
                 if ts.time() >= dt.time(15, 45):
                     reason, exitp, ref = '15:45 day-trade time stop', bs(r.C, K, T, rv, kind) * 100, ts; break
             if reason:
@@ -122,7 +125,7 @@ while True:
                     key = f'{s}:{kind}'
                     g = gates(p, kind, s)
                     c = pick(s, px, kind, x.index[-1], p['rv']) if not g else None
-                    if not g and c is None: g.append('no 0.3-0.6 sigma strike within $1,000')
+                    if not g and c is None: g.append('no 0-0.4 sigma strike within $1,000')
                     if g:
                         if key not in st['rej']:
                             ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
@@ -133,7 +136,7 @@ while True:
                     ev.append(f"*** DT ENTRY {s} {kind.upper()} {c['occ']} ~${c['prem']:.0f} ({c['sig']:.2f} sigma, RV {p['rv']:.0%}) | {s} {px:.2f} "
                               f"broke OR {'high' if kind == 'call' else 'low'} {hi if kind == 'call' else lo:.2f}, held {run}m, VWAP {vw:.2f}, relvol {rv_:.2f}x | "
                               f"gates PASS (whipsaw {p['up5']}/{p['dn5']}, 3d {p['ct3']:+.1f}%, RSI {p['rsi']:.0f}) | "
-                              f"exits +30% ${c['prem']*1.3:.0f} / -30% ${c['prem']*0.7:.0f} / 15:45")
+                              f"exits +{TGT:.0%} ${c['prem']*(1+TGT):.0f} / -{STOP:.0%} ${c['prem']*(1-STOP):.0f} / max hold {MAXHOLD}m / 15:45")
                     break
         # ---- marks + heartbeat
         marks = []
