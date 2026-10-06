@@ -161,6 +161,13 @@ real-money trading until the record proves the decisions out. Rules:
   dates already PAST (JPM would have stayed blocked after its 10-13 report). Now
   blocks only `today ≤ earnings ≤ expiry`.
 
+  **Daily cap removed (user decision 2026-10-07): unlimited day trades**, still one
+  per name per day, $1,000 max premium each. The old 3/day cap was never tested;
+  the uncapped backtest averaged ~3 trades/session, so the cap only bound on busy
+  one-direction days (10-06: three correlated tech calls in 11 minutes). Watch for:
+  total open premium on busy days, and several entries that are really one sector
+  bet. Report daily open-premium exposure in every end-of-day summary.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace

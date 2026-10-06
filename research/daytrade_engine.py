@@ -20,7 +20,8 @@ SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 TODAY = pd.Timestamp.now(tz='America/New_York').date()
 EXPIRY = TODAY + dt.timedelta(days=(4 - TODAY.weekday()) % 7 + 14)      # Friday two weeks out (pen-test 10-06)
 EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}   # verified dates (config.py)
-BUDGET, TGT, STOP, MAXN, MAXHOLD = 1000.0, 0.20, 0.20, 3, 120   # pen-test 10-06
+BUDGET, TGT, STOP, MAXHOLD = 1000.0, 0.20, 0.20, 120   # pen-test 10-06
+MAXN = 10**6          # no daily cap (user decision 2026-10-07); still one trade per name per day
 PRE = pd.read_pickle('sweep_pre.pkl')
 ST = f'dt_state_{TODAY}.json'
 
@@ -147,7 +148,7 @@ while True:
             marks.append(f"{occ} ~${cur:.0f} ({(cur/p['prem']-1)*100:+.0f}%)")
         hb = pd.Timestamp(st['hb']) if st.get('hb') else None
         if ev or hb is None or (now - hb).total_seconds() >= 1800:
-            say(now, f"day-trade engine | open: {', '.join(marks) if marks else 'none'} | entries today {len(st['done']) + len(st['pos'])}/{MAXN}"
+            say(now, f"day-trade engine | open: {', '.join(marks) if marks else 'none'} | entries today {len(st['done']) + len(st['pos'])} (no cap)"
                      + ('' if ev else ' (heartbeat)'))
             for e_ in ev: print('   ' + e_, flush=True)
             st['hb'] = now.isoformat()
