@@ -131,7 +131,7 @@ while True:
                             st['rej'].append(key + ':volsus')
                         continue
                     if run > 20:   # confirmed >10 min before this poll: the tested entry point has passed (late start)
-                        if key + ':stale' not in st['rej']:
+                        if key + ':stale' not in st['rej'] and key not in st['rej']:   # don't re-report a gate rejection as 'missed'
                             ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
                             st['rej'].append(key + ':stale')
                         continue
