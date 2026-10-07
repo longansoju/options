@@ -199,6 +199,21 @@ real-money trading until the record proves the decisions out. Rules:
   engine at 09:15 ET weekdays (CRON_TZ America/New_York, so it follows US DST:
   21:15 SGT now, 22:15 SGT after US clocks change in November).
 
+## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
+
+**2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
+(`MU261007C01080000`) at **$0.06 near the 09:31 ET low ($1,011.42)**; MU then rallied
++6.9% to $1,080.88 by 12:06 and the contract traded ~**$5 (~80x)**. Base rates from
+the last 60 sessions of 5m bars: MU's high after 10:00 was ≥ +4% above its 10:00
+price on 7 days (12%), ≥ +5% on 5 days (8%). A daily far-OTM 0DTE ticket that pays
+~80x once or twice a month COULD be positive-expectancy — but strike and timing here
+are hindsight, the open-direction model is a coin flip (AUC 0.514), and real quotes
+on these strikes are often $0.05/$0.10 (a 100% spread). Black-Scholes at RV cannot
+price them. **Do not trade it or claim it; test it only with real 0DTE quotes**
+(moomoo chain). Needed: historical intraday option prices for far-OTM 0DTE strikes
+— if the moomoo API cannot serve history, start logging opening quotes daily from
+the VPS and test forward once ~40 sessions exist.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace
