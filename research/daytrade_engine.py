@@ -124,6 +124,11 @@ while True:
                     run = int(beyond[::-1].cumprod().sum())
                     if run < 10 or not (px > vw if kind == 'call' else px < vw) or rv_ < 1.0: continue
                     key = f'{s}:{kind}'
+                    if run > 20:   # confirmed >10 min before this poll: the tested entry point has passed (late start)
+                        if key + ':stale' not in st['rej']:
+                            ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
+                            st['rej'].append(key + ':stale')
+                        continue
                     g = gates(p, kind, s)
                     c = pick(s, px, kind, x.index[-1], p['rv']) if not g else None
                     if not g and c is None: g.append('no 0-0.4 sigma strike within $1,000')

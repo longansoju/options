@@ -168,6 +168,12 @@ real-money trading until the record proves the decisions out. Rules:
   total open premium on busy days, and several entries that are really one sector
   bet. Report daily open-premium exposure in every end-of-day summary.
 
+  **Stale-signal rule (2026-10-07, late start at 10:55 ET):** a break that
+  confirmed more than ~10 minutes before the engine sees it (held > 20 consecutive
+  1m closes) is reported as MISSED and not traded. The backtest enters AT
+  confirmation; 10-05's late entries (VRT 28m, AMZN 51m after) were the worst
+  trades. Start the engine before 09:30 ET (21:30 SGT) to avoid missing the morning.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace
