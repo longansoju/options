@@ -181,6 +181,24 @@ real-money trading until the record proves the decisions out. Rules:
   volume is not confirmed. Rule: relvol ≥ 4x on a day range < 1.5% → reject as
   `volume suspect` until explained.
 
+  **Debit spreads for over-budget names — tested 2026-10-07, REJECTED.** Question:
+  MU (and other names where no 0-0.4σ two-week single fits $1,000) — trade a debit
+  spread instead? `research/spread_bt.py`, same v2 rules, 60 sessions:
+
+  | vehicle | friction | n | win | avg after friction | before |
+  |---|---|---|---|---|---|
+  | single, ≤ $1,000 (current) | 4% | 57 | 30% | **−5.4%** | −1.4% |
+  | spread, all names | 6% | 124 | 19% | −7.8% | −1.8% |
+  | spread, only over-budget names | 6% | 67 | 15% | −8.2% | −2.2% |
+  | same at 8% (two legs, wider opening spreads) | 8% | 67 | 12% | −10.2% | −2.2% |
+
+  Same pre-friction result, but a spread pays two bid-ask spreads and moves too
+  slowly to reach ±20% inside a 120-minute hold (12-19% win). **MU stays out of the
+  day-trade book under the $1,000 budget.** Raising the budget is the user's call,
+  not a rule change. Scheduled routine `trig_01UPqtkR5VGDTgz9Ebo6Y5aa` starts the
+  engine at 09:15 ET weekdays (CRON_TZ America/New_York, so it follows US DST:
+  21:15 SGT now, 22:15 SGT after US clocks change in November).
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace
