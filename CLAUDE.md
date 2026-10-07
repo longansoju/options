@@ -180,6 +180,13 @@ real-money trading until the record proves the decisions out. Rules:
   Either a feed error or unexplained block flow. A breakout "confirmed" by that
   volume is not confirmed. Rule: relvol ≥ 4x on a day range < 1.5% → reject as
   `volume suspect` until explained.
+  **Widened to range < 2.0% the same day (GOOGL):** the engine fired a GOOGL call at
+  13:47 ET on "4.52x" relvol, but the volume was one 31M-share burst at 11:30-12:00
+  (48% of the day's 65M) on a 0.6% move, while the actual breakout bars traded
+  ~0.7M per 30 min — i.e. the break itself was on THIN volume. Day range 1.52%, just
+  past the 1.5% line. Voided before booking (not in the book); the news (Waymo
+  debt raise, Unity partnership, lawsuits) does not explain a one-bar burst.
+  Same feed pattern as NVDA that morning — suspect the data, not the market.
 
   **Debit spreads for over-budget names — tested 2026-10-07, REJECTED.** Question:
   MU (and other names where no 0-0.4σ two-week single fits $1,000) — trade a debit
