@@ -113,6 +113,7 @@ DAYTRADE_EARNINGS: dict[str, str] = {
     "ASML": "2026-10-14", "TSM": "2026-10-15", "VRT": "2026-10-21",   # VRT: sources say 10-21 or 10-28
     "MSFT": "2026-10-28", "AMZN": "2026-10-29", "ANET": "2026-11-02",
     "NVDA": "2026-11-17", "AVGO": "2026-12-10",
+    "SMCI": "2026-11-03",
     # batch 1
     "GOOGL": "2026-10-28", "JPM": "2026-10-13", "V": "2026-10-27",
     "XOM": "2026-10-09",    # sources say 10-09 or 10-30: take the earlier
