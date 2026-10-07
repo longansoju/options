@@ -174,6 +174,13 @@ real-money trading until the record proves the decisions out. Rules:
   confirmation; 10-05's late entries (VRT 28m, AMZN 51m after) were the worst
   trades. Start the engine before 09:30 ET (21:30 SGT) to avoid missing the morning.
 
+  **Volume data-quality guard (2026-10-07):** NVDA printed 242M shares by 11:34 ET
+  (6.2x same-clock) — 40-65M per 15 min from 10:15 — on a ~1% day range with no
+  matching news (SpaceX chip-financing talk, ATH the day before; nothing intraday).
+  Either a feed error or unexplained block flow. A breakout "confirmed" by that
+  volume is not confirmed. Rule: relvol ≥ 4x on a day range < 1.5% → reject as
+  `volume suspect` until explained.
+
 ## Parked — Moomoo OpenD real-data setup (user will configure later)
 
 User trades on **moomoo (Singapore)** and wants real option chains/quotes to replace

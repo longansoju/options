@@ -124,6 +124,12 @@ while True:
                     run = int(beyond[::-1].cumprod().sum())
                     if run < 10 or not (px > vw if kind == 'call' else px < vw) or rv_ < 1.0: continue
                     key = f'{s}:{kind}'
+                    rng = (float(x.H.max()) / float(x.L.min()) - 1) * 100
+                    if rv_ >= 4.0 and rng < 1.5:   # data-quality guard (10-07 NVDA: 6x volume on a 1% range, no news)
+                        if key + ':volsus' not in st['rej']:
+                            ev.append(f"DT signal {s} {kind} REJECTED: volume suspect ({rv_:.1f}x on a {rng:.1f}% day range, unexplained) | {px:.2f}")
+                            st['rej'].append(key + ':volsus')
+                        continue
                     if run > 20:   # confirmed >10 min before this poll: the tested entry point has passed (late start)
                         if key + ':stale' not in st['rej']:
                             ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
