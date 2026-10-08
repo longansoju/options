@@ -206,6 +206,24 @@ real-money trading until the record proves the decisions out. Rules:
   engine at 09:15 ET weekdays (CRON_TZ America/New_York, so it follows US DST:
   21:15 SGT now, 22:15 SGT after US clocks change in November).
 
+### 2026-10-08 losing day (−$195): the intuitive lessons were tested and FAILED
+Midday reversal (oil spike; SMH −3%): two calls bought into the turn (AVGO 12:26,
+V 13:22) hit −20% stops; ~14 put signals were all blocked, mostly by the 3-day
+counter-trend gate. Three tempting conclusions, each checked before writing:
+
+| hypothesis | test | result |
+|---|---|---|
+| "the gate cost us the puts" | simulate today's in-budget puts blocked only by counter-trend | MSFT +20, AMZN +20, ANET −20, PLTR −10.5 → avg +2.4%: a coin flip, gate cost ~nothing |
+| "only trade with the market" | require SMH on the right side of its VWAP at entry, 60 sessions | **worse** in both halves (IS −2.8→−5.5%, OOS −7.0→−8.5%) — rejected |
+| "don't enter after noon" | entries after 12:00 vs before, same data | after-noon entries did **better** (−3.4% vs −6.8%) — rejected |
+
+The honest lesson: today was ordinary variance inside a strategy with no measured
+edge (live day trades +$9 on $7,686 before costs ≈ −4%/trade after a 4% spread,
+tracking the backtest's −5.7%). A losing day is not evidence for a rule change;
+each "obvious fix" above would have made the backtest worse. Still being tracked
+(n too small): size of the 3-day run at entry (MSFT 10-06 and AVGO 10-08 lost
+after +3%/+6% runs; ANET 10-07 won after +5.3%).
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
