@@ -73,6 +73,7 @@ def say(now, msg):
 
 
 st = json.load(open(ST)) if os.path.exists(ST) else {'pos': {}, 'done': [], 'rej': [], 'hb': None}
+st.setdefault('start', pd.Timestamp.now(tz='America/New_York').isoformat())   # first engine run of the day
 while True:
     now = pd.Timestamp.now(tz='America/New_York')
     if now.time() > dt.time(16, 1) and not st['pos']:
@@ -130,7 +131,8 @@ while True:
                             ev.append(f"DT signal {s} {kind} REJECTED: volume suspect ({rv_:.1f}x on a {rng:.1f}% day range, unexplained) | {px:.2f}")
                             st['rej'].append(key + ':volsus')
                         continue
-                    if run > 20:   # confirmed >10 min before this poll: the tested entry point has passed (late start)
+                    watched = (now - pd.Timestamp(st['start'])).total_seconds() / 60
+                    if run > 20 and (run - 10) > watched + 2:   # break confirmed before the engine was watching (late start) - not chased
                         if key + ':stale' not in st['rej'] and key not in st['rej']:   # don't re-report a gate rejection as 'missed'
                             ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
                             st['rej'].append(key + ':stale')
