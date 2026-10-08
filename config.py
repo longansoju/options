@@ -114,6 +114,7 @@ DAYTRADE_EARNINGS: dict[str, str] = {
     "MSFT": "2026-10-28", "AMZN": "2026-10-29", "ANET": "2026-11-02",
     "NVDA": "2026-11-17", "AVGO": "2026-12-10",
     "SMCI": "2026-11-03",
+    "AAPL": "2026-11-02",   # Apple IR via MacRumors 10-06 (estimate sites: 10-29)
     # batch 1
     "GOOGL": "2026-10-28", "JPM": "2026-10-13", "V": "2026-10-27",
     "XOM": "2026-10-09",    # sources say 10-09 or 10-30: take the earlier
