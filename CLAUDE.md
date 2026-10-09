@@ -187,6 +187,14 @@ real-money trading until the record proves the decisions out. Rules:
   past the 1.5% line. Voided before booking (not in the book); the news (Waymo
   debt raise, Unity partnership, lawsuits) does not explain a one-bar burst.
   Same feed pattern as NVDA that morning — suspect the data, not the market.
+  **Post-open burst cap (2026-10-09):** the bursts are common, not rare — single
+  1m bars of 1.5-25M shares appeared after the open on NVDA, AMZN, V and MSFT the
+  same morning (NVDA 25.0M at 10:51 vs a 0.22M median). Relvol now caps every bar
+  after 09:35 at 10x that day's post-open median 1m volume; the 09:30-09:35 opening
+  auction is left untouched (it is real volume and is in the 20-session baseline).
+  Lesson from applying it: an NVDA put was voided on suspicion, then RESTORED when
+  the capped relvol (1.02x) still met the rule — voiding a signal needs the rule to
+  fail on clean data, not just suspicious-looking data.
 
   **Debit spreads for over-budget names — tested 2026-10-07, REJECTED.** Question:
   MU (and other names where no 0-0.4σ two-week single fits $1,000) — trade a debit

@@ -119,7 +119,9 @@ while True:
                 post = x[x.index.time >= dt.time(10, 0)]
                 px = float(x.C.iloc[-1]); vw = float((x.C * x.V).sum() / x.V.sum()); t = x.index[-1].time()
                 ref = [float(cs[cs.index.time <= t].iloc[-1]) for cs in p['curve'].values() if (cs.index.time <= t).any()]
-                rv_ = float(x.V.sum()) / max(np.median(ref), 1) if ref else 0
+                vcap = x.V.copy(); late = vcap.index.time >= dt.time(9, 35)   # keep the real opening auction; cap post-open feed bursts
+                vcap[late] = vcap[late].clip(upper=10 * max(float(vcap[late].median()), 1))   # (NVDA 10-07/10-09: 25-43M-share bars on flat price)
+                rv_ = float(vcap.sum()) / max(np.median(ref), 1) if ref else 0
                 for kind, beyond in (('call', post.C > hi), ('put', post.C < lo)):
                     if not len(beyond) or not beyond.iloc[-1]: continue
                     run = int(beyond[::-1].cumprod().sum())
