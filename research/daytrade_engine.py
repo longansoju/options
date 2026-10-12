@@ -64,7 +64,7 @@ def gates(p, kind, sym):
     if kind == 'call' and p['rsi'] > 70: b.append(f"RSI {p['rsi']:.0f}")
     if kind == 'put' and p['rsi'] < 32: b.append(f"RSI {p['rsi']:.0f}")
     if EARN.get(sym) and TODAY <= EARN[sym] <= EXPIRY: b.append(f"earnings {EARN[sym]} before {EXPIRY}")
-    if sym in config.DAYTRADE_EXPANSION and sym not in EARN: b.append('no verified earnings date')
+    if sym not in EARN: b.append('no verified earnings date')   # all names, not just expansion (10-12)
     return b
 
 
