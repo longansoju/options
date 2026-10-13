@@ -81,7 +81,10 @@ while True:
     try:
         live = {}
         for s in SYMS:
-            x = er.fetch_chart(s, '1m', '1d')
+            try:
+                x = er.fetch_chart(s, '1m', '1d')
+            except (KeyError, IndexError, TypeError):   # no bars yet (e.g. 09:30:00) - skip this name this poll
+                continue
             x = x[(x.index.time >= dt.time(9, 30)) & (x.index.time < dt.time(16, 0))].dropna()
             x = x[x.V > 0]
             if len(x): live[s] = x
