@@ -75,9 +75,17 @@ real-money trading until the record proves the decisions out. Rules:
   to survive real friction; paper validates direction/timing, not exact premium.
 - **Book separation.** `recommendations.book` = `real` (user's actual fills) |
   `paper` (Claude's trades) | `watch` (pending-trigger candidates).
-- **Exit rules (recalibrated 2026-09-14 against the 26-trade book).** BOTH
-  strategies: **+50% target on FIRST TOUCH** / −50% stop / **cut on day 2 if the
-  position is red** / swing also exits by 21 DTE, momentum by 2 DTE or EOD.
+- **Exit rules — CHANGED 2026-10-15 (user: "adopt it, let's see how it works").**
+  Swing + momentum: **−50% stop; once the premium has been +50%, TRAIL — exit when
+  its value falls 30% from the peak value** (peak +100% → out at +40%); swing still
+  exits by 21 DTE, momentum by 2 DTE. The fixed +50% first-touch target and the
+  day-2 red cut are retired for these two strategies (the grid was tested without a
+  day-2 cut, and that cut is exactly what kills slow multi-day flips). Evidence:
+  "The exit is the issue" lesson below. `analysis/harvest.py:trailing_exit`,
+  `config.TRAIL_*`. On the broker: a resting −50% stop at entry, switched to a
+  trailing stop once +50% prints. Day-trade exits are unchanged (±20/120m/15:45).
+  Review the live result at n≥10 trailing exits. Previous rule, for the record:
+  +50% target on FIRST TOUCH / −50% stop / cut on day 2 if red (2026-09-14).
   Every exit → a labeled outcome. The +50% target replaced swing's old +75%:
   backtested, +75% gives back more than it captures (−29.1% vs −24.6% avg).
   Because the user is GMT+8 and the US session runs overnight, the harvest must
@@ -349,8 +357,8 @@ stop; once the premium has been up +50%, exit if it falls 30% from its peak valu
 than "+50% first touch" in BOTH halves in all five combos (1wk 0.2σ −10.7 → −2.8%; 2wk
 0.2σ −10.6 → −1.5%; 4wk 0.2σ −6.3 → +7.0%; 1wk 1σ −17.9 → +2.2%; 2wk 1σ −15.2 → −2.1%).
 It lets the multi-day flips run while still banking most of a round-trip. Executable from
-GMT+8 as a resting trailing-stop order. Proposed for swing/momentum 10-15; not yet adopted
-(pending the user's OK). Daily-bar test, stop checked before the trail — conservative.
+GMT+8 as a resting trailing-stop order. **ADOPTED for swing/momentum 2026-10-15** on the
+user's OK. Daily-bar test, stop checked before the trail — conservative.
 
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 

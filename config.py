@@ -25,6 +25,9 @@ MAX_PORTFOLIO_HEAT_PCT = 20.0   # total open risk cap across all positions
 
 # --- Exit guardrails (section 4.4) ---
 MAX_LOSS_PCT = 50.0             # cut at -50% of premium paid
+# Swing/momentum harvest (adopted 2026-10-15): trailing, not a fixed +50% target.
+TRAIL_ARM_PCT = 50.0            # trail activates once premium has been +50%
+TRAIL_GIVEBACK = 0.30           # then exit if premium value falls 30% from its peak
 DTE_FLOOR = 7                   # never hold past this many days to expiry
 CATALYST_EXIT_BUFFER_DAYS = 1   # close at least this many days before known catalyst
 

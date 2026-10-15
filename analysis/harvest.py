@@ -138,3 +138,23 @@ def apply_exit_rule(pnl_path: list[float], target: float = 50.0,
     if cut_day is not None and len(pnl_path) > cut_day and pnl_path[cut_day] < 0:
         return pnl_path[cut_day]
     return pnl_path[-1]
+
+
+def trailing_exit(pnl_path: list[float], stop: float = -50.0, arm: float = 50.0,
+                  giveback: float = 0.30) -> float:
+    """Swing/momentum exit adopted 2026-10-15 (replaces the +50% first-touch target).
+
+    -50% stop; once the premium has been up `arm`% it is held until its VALUE falls
+    `giveback` from the peak value (peak +100% -> exit at +40%). research/exit_grid.py:
+    beat "+50 first touch / -50" in both halves in all five expiry/strike combos.
+    The time stop (momentum 2 DTE, swing 21 DTE) is applied by the caller.
+    """
+    peak = None
+    for v in pnl_path:
+        if v <= stop:
+            return stop
+        if peak is not None and (100 + v) <= (100 + peak) * (1 - giveback):
+            return (100 + peak) * (1 - giveback) - 100
+        if v >= arm:
+            peak = v if peak is None else max(peak, v)
+    return pnl_path[-1]
