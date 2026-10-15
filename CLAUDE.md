@@ -333,6 +333,25 @@ predictable. Same result as the 5-min direction work (AUC 0.512): the price/volu
 we have does not contain the bounce. What it lacks, and the moomoo chain would add:
 option volume/IV skew, which is the next thing worth testing.
 
+### "The exit is the issue — winners took days to flip" (user, 10-15) — exit grid
+`research/exit_grid.py` + `exit_check.py`: entries FIXED (20d close-break trend signals,
+all gates, 27 names, 2y daily, ~480 trades), only the exit varied, 5 expiry/strike combos.
+**The user's observation is real:** 25-31% of entries peaked ≥ +200% at some point, median
+5-19 days after entry (longer expiry → later peak), and **34-49% of those hit −50% first**
+— the stop cut a third to a half of the eventual big winners before they flipped.
+**But "just hold" is not the lesson.** Hold-to-expiry on 4-week 0.2σ looked like +33.6%,
+and all of it is CALLS in the memory/AI up-cycle (memory +273%, top 10 trades = SNDK/MU/
+STX/MRVL/NVTS calls at 9-20x); held PUTS lose −45% to −68%, non-memory names +6%, and
+without the top 10 trades or with IV = RV × 1.15 (real IV sits above realized) it goes
+negative. That is long beta on one sector's bull run, not an exit rule.
+**What DID survive — a trailing exit instead of the fixed +50% target:** keep the −50%
+stop; once the premium has been up +50%, exit if it falls 30% from its peak value. Better
+than "+50% first touch" in BOTH halves in all five combos (1wk 0.2σ −10.7 → −2.8%; 2wk
+0.2σ −10.6 → −1.5%; 4wk 0.2σ −6.3 → +7.0%; 1wk 1σ −17.9 → +2.2%; 2wk 1σ −15.2 → −2.1%).
+It lets the multi-day flips run while still banking most of a round-trip. Executable from
+GMT+8 as a resting trailing-stop order. Proposed for swing/momentum 10-15; not yet adopted
+(pending the user's OK). Daily-bar test, stop checked before the trail — conservative.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
