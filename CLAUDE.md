@@ -261,6 +261,33 @@ at the 10-14 close ($913.91) — both before the screenshot moves — but a 0.2�
 says lose on average. Forward-test instead: log trend signals as `watch` rows going
 forward so the record builds without risking the paper P&L.
 
+### The 10-15 "missed puts" (NBIS 160P +731%, DELL 450P +1290%, STX 660P +620%, MU 870P +201%, SNDK 1300P) — tested
+All were 1-DTE far-OTM PUTS that exploded at the 10-15 open on ONE shared event: a hot
+September CPI (3.7%) at 08:30 ET plus AI-funding fears — the whole AI-hardware complex
+gapped down 4.6-7.2% at the open (DELL −7.2%, NBIS −5.7%, SNDK −6.4%, WDC −5.7%, MU −4.6%;
+SMH −3.3%). Five winners from one correlated gap is one event, not five signals.
+
+Tested the pattern (`research/lottery_overnight2.py`): buy a 1-DTE put 1.0/1.5/2.0σ OTM
+at every close, sell at the next OPEN, 27 names × 2 years (~12k name-nights each), 10%
+friction. **First version showed +40% to +224% per night — a pricing ARTIFACT** (the
+same trap as the overnight-straddle note): Black-Scholes at RV charged no time for the
+overnight gap, so every far-OTM ticket looked free. Corrected by charging the measured
+overnight share of daily variance (33-59% by name) and a modest put skew:
+
+| strike | sell at next open, avg | ≥ +100% | ≥ +400% | lose > 80% | median |
+|---|---|---|---|---|---|
+| 1.0σ | −28.4% | 7.3% | 1.7% | 29% | −60% |
+| 1.5σ | −31.6% | 6.1% | 1.8% | 39% | −71% |
+| 2.0σ | −31.6% | 4.7% | 1.7% | 51% | −81% |
+
+The 5x+ nights happen ~1-2% of the time; on average the ticket loses ~30% a night and the
+median loses most of its value. Requiring a prior 3-day decline changes nothing. Only
+selling at the exact day's LOW is positive (+96-115%) — perfect hindsight timing. **Do not
+trade nightly lottery puts.** The real lesson: these are macro-event gaps (CPI morning);
+the event radar can flag *that a big gap is likely* on scheduled release nights, never the
+direction. **Lesson about my own process:** a backtest that suddenly shows +90%/night is a
+bug until proven otherwise — check the pricing model before believing it.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
