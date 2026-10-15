@@ -288,6 +288,20 @@ the event radar can flag *that a big gap is likely* on scheduled release nights,
 direction. **Lesson about my own process:** a backtest that suddenly shows +90%/night is a
 bug until proven otherwise — check the pricing model before believing it.
 
+**Follow-up 10-15 — "how much would we win over the past month?"** (`research/lottery_month.py`,
+54 names, $100/ticket, buy 1.5σ-OTM 1-DTE at each close, sell at next open, corrected pricing):
+
+| | tickets | spent | P/L | per ticket | 5x+ hits |
+|---|---|---|---|---|---|
+| puts, past month (incl. the 10-15 crash) | 1,242 | $124,200 | **−$45,588** | −36.7% | 20 |
+| calls, past month | 1,242 | $124,200 | −$38,225 | −30.8% | 15 |
+
+The 10-15 open alone made +$6,931 on the put tickets; without it the month is −$52,519. Over
+2 years, puts were profitable in **2 of 23 months** (Jan 2025, the Apr 2025 tariff crash),
+calls in 5 of 23. The user's own option charts showed the same thing on their left side:
+each winning contract had decayed to $0.01-0.75 on the days before. Caveat: model prices,
+not real quotes — the moomoo chain is the only way to confirm.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
