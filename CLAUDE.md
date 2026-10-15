@@ -312,6 +312,13 @@ vs −3.9% for a call bought on any day; name ≤ −4% days −4.2%. Elevated v
 calls dearer and the −50% stop gets hit on the chop first. Same verdict as the gate
 test: no edge either way, so the counter-trend gate stays. The 2y window is a bull
 market — the "+2.9%" partly IS the bull market.
+Intraday version, same day (`research/bounce_dt.py`, 21 names, 40 sessions of 5m bars,
+v2 vehicle/exits, 4% spread) — calls on DOWN-3d names, i.e. the ones the gate blocks:
+the gate-blocked ORB breakouts averaged −7.2% (23% win) vs −4.2% for the calls the gate
+allows, so the gate is earning its keep. "Anticipating" earlier does not fix it: VWAP
+reclaim −4.8%, buy at 10:00 −3.5%; on gap-down mornings buy-at-10:00 was +1.9% IS but
+−4.8% OOS (n=46; sector gap-down mornings n=27, +4.2% IS / −5.7% OOS) — fails the
+both-halves rule. No bounce entry adopted.
 
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
