@@ -302,6 +302,17 @@ calls in 5 of 23. The user's own option charts showed the same thing on their le
 each winning contract had decayed to $0.01-0.75 on the days before. Caveat: model prices,
 not real quotes — the moomoo chain is the only way to confirm.
 
+**Follow-up 10-15 — "do the opposite: buy the bounce after the CPI selloff?"**
+(`research/bounce_bt.py`, 27 names, 2y daily). The underlying DOES drift up after
+selloffs: after SMH ≤ −3% days (43 events), names averaged +2.9% over 5 days (72% of
+events higher) vs +1.5% on any day — but only 51% were higher after 3 days, i.e. the
+bounce is slow and choppy, not a snap-back. Calls do not capture it: a 0.2σ 2-week
+call bought at the selloff close (+50/−50, 4% friction) averaged −5.6% (median −54%)
+vs −3.9% for a call bought on any day; name ≤ −4% days −4.2%. Elevated vol makes the
+calls dearer and the −50% stop gets hit on the chop first. Same verdict as the gate
+test: no edge either way, so the counter-trend gate stays. The 2y window is a bull
+market — the "+2.9%" partly IS the bull market.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
