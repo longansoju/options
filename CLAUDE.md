@@ -319,6 +319,19 @@ allows, so the gate is earning its keep. "Anticipating" earlier does not fix it:
 reclaim −4.8%, buy at 10:00 −3.5%; on gap-down mornings buy-at-10:00 was +1.9% IS but
 −4.8% OOS (n=46; sector gap-down mornings n=27, +4.2% IS / −5.7% OOS) — fails the
 both-halves rule. No bounce entry adopted.
+**User pushback: "don't use time, use all the information" — tested (`research/bounce_ml.py`).**
+615 bounce-candidate name-days (down 3d or gap ≤ −1%), every 5m bar 10:00-14:30 a decision
+point (33,825), 16 features: gap, return from open, distance off the low (σ), range
+position, gap-fill room, VWAP distance, last-30m return, relvol, last-30m volume surge,
+3d decline, RSI, SMH from open + last 30m, relative strength vs SMH, bars since low,
+higher-low count. Label = the actual v2 call trade from that bar. Walk-forward both ways
+(train one half of sessions, test the other). **OOS AUC 0.51-0.57; buying the model's
+top 10-20% bars averaged −2.7% to −5.3% vs −4.1% for the first bar of every candidate.**
+Win rate rose (~29% → ~40%) but P&L did not. Most-used features: SMH from open, gap,
+distance off the low — i.e. the sector's own move, which is the thing that is not
+predictable. Same result as the 5-min direction work (AUC 0.512): the price/volume data
+we have does not contain the bounce. What it lacks, and the moomoo chain would add:
+option volume/IV skew, which is the next thing worth testing.
 
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
