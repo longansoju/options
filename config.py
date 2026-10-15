@@ -118,6 +118,8 @@ DAYTRADE_EARNINGS: dict[str, str] = {
     "META": "2026-10-28",   # MarketBeat/TipRanks (Wall St Horizon: unconfirmed), verified 10-12
     "WDC": "2026-10-22",    # company IR, confirmed 10-12
     "STX": "2026-10-27",    # estimate 10-27/10-28: take the earlier (10-12)
+    "MU": "2026-12-16",     # MarketBeat/Quartr/Public 12-16 (TipRanks est. 12-23), verified 10-15
+    "NBIS": "2026-10-22",   # unconfirmed: Investing.com 10-22 vs MarketBeat est. 11-10 - take the earlier (10-15)
     # batch 1
     "GOOGL": "2026-10-28", "JPM": "2026-10-13", "V": "2026-10-27",
     "XOM": "2026-10-30",    # sources said 10-09 or 10-30; 10-09 passed with no report -> use 10-30 (10-12)
