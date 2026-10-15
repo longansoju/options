@@ -232,6 +232,35 @@ each "obvious fix" above would have made the backtest worse. Still being tracked
 (n too small): size of the 3-day run at entry (MSFT 10-06 and AVGO 10-08 lost
 after +3%/+6% runs; ANET 10-07 won after +5.3%).
 
+### Overnight trend options (user request 2026-10-15) — backtested, NOT adopted
+Trigger: the user's real moomoo screenshots on 10-15 — `MU261016P00870000` +201% on the
+day ($4.75 → $14.30, high $23.60) and `SNDK261016P01300000` $0.75 → $27.50 over ~a week,
+both riding the memory-chip selloff mostly through OVERNIGHT gaps the day-trade rules
+never hold. Tested `research/trend_bt.py`: daily bars, 2 years, 27 names (26 + SNDK);
+signal = close beyond the prior 20-day low/high, entry at that close, held overnight,
++50% / −50% / 2-DTE exits, IS = first half of signals, OOS = second half.
+
+| variant (after friction) | n | win | IS | OOS | all |
+|---|---|---|---|---|---|
+| all gates, 1wk, 0.2σ | 495 | 43% | −9.6% | −11.3% | −10.4% |
+| all gates, 2wk, 0.2σ | 494 | 44% | −7.8% | −13.1% | −10.5% |
+| no RSI gate, 2wk, 0.2σ (best) | 757 | 48% | −3.3% | −9.5% | −6.4% |
+| all gates, 1wk, **1.0σ (lottery)** | 495 | 40% | −17.5% | −17.7% | −17.6% |
+| all gates, **this-week 1.0σ (lottery)** | 495 | 36% | −23.7% | −23.7% | −23.7% |
+
+**Puts were the worst side** in every variant (−15% to −33%). The far-OTM "lottery"
+versions — the shape of the two screenshot winners — were the WORST, consistent with
+the book's >1σ 0-for-10. The only positive pocket was the memory names (MU/SNDK/WDC/STX,
++10.8% avg in the best variant) — but that came from CALLS in the 2025-26 memory
+up-cycle, memory PUTS were negative (MU puts −14% / −29%), the subset decays from +19.8%
+IS to +1.2% OOS, and picking the sector that just made money is hindsight selection.
+**Verdict: no general edge; do not build an overnight trend-options strategy on this.**
+Honest coverage notes: the rule DID flag SNDK put at the 10-12 close ($1,487) and MU put
+at the 10-14 close ($913.91) — both before the screenshot moves — but a 0.2σ MU put was
+~$3,000 (over budget) and the actual winners were far-OTM 1-DTE tickets the backtest
+says lose on average. Forward-test instead: log trend signals as `watch` rows going
+forward so the record builds without risking the paper P&L.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
