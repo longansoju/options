@@ -240,6 +240,24 @@ each "obvious fix" above would have made the backtest worse. Still being tracked
 (n too small): size of the 3-day run at entry (MSFT 10-06 and AVGO 10-08 lost
 after +3%/+6% runs; ANET 10-07 won after +5.3%).
 
+### 30-day-trade checkpoint (2026-10-16) — the live result is the regime, not an edge
+Live v2 day trades 10-05 → 10-16: **30 trades, 21 wins (70%), +$727 on $15,253, +6.3%/trade
+before costs** (+2.3% after a 4% spread). Backtest expectation was ~31% win, −1.9% before
+spread. `research/live_vs_bt.py` re-ran the SAME v2 rules on 5m bars over the same window:
+
+| window | n | win | avg (pre-spread) |
+|---|---|---|---|
+| backtest, prior month 09-01..10-02 | 70 | 43% | −1.9% |
+| **backtest, live window 10-05..10-14** | 32 | **62%** | **+3.5%** |
+| live engine, 10-05..10-14 | 24 | 71% | +6.3% |
+
+The backtest ALSO wins in the live window — October's trending, macro-driven tape (CPI
+selloff, tech-to-banks rotation; puts +7.6% bt / +10.3% live) suits breakouts, September's
+did not. The live engine's extra ~3 points over the same-window backtest is 1m vs 5m bars
+and n=24 noise. **Verdict: no change of view — the strategy still has no demonstrated edge
+across regimes; it did well in a favorable month.** Keep forward-testing; re-check at n=60
+and compare against a choppy month before claiming anything. Real chain still required.
+
 ### Overnight trend options (user request 2026-10-15) — backtested, NOT adopted
 Trigger: the user's real moomoo screenshots on 10-15 — `MU261016P00870000` +201% on the
 day ($4.75 → $14.30, high $23.60) and `SNDK261016P01300000` $0.75 → $27.50 over ~a week,
