@@ -258,6 +258,23 @@ and n=24 noise. **Verdict: no change of view — the strategy still has no demon
 across regimes; it did well in a favorable month.** Keep forward-testing; re-check at n=60
 and compare against a choppy month before claiming anything. Real chain still required.
 
+### Review of PASSED signals, 10-15 + 10-16 (user: "did you check the passed trades for mistakes?")
+`research/passed_review.py`: every rejected signal priced as if taken (v2 rules, 1m bars).
+31 passed; 22 in budget went 68% win, +5.9% avg, +$449 — the same as the trades taken,
+i.e. the October regime lifted everything. By gate (in budget):
+- **counter-trend only:** n=6, 50% win, −2.2% — a coin flip, the gate cost nothing (again).
+- **whipsaw involved:** n=7, 86% win, +11.6% — but the 60-session pen-test says removing it
+  is worse OOS; one favorable week is not evidence (the 10-08 lesson). Kept.
+- **earnings only:** n=4, 100% win, +17.9% (META, MSFT, AMZN, V). **This one is a real rule
+  error, not variance:** the day-trade earnings gate was inherited from the multi-day rules
+  and was NEVER in the pen-test. A day trade is flat by 15:45, so it never holds through the
+  print — CLAUDE.md's own earnings rule allows an entry that "explicitly plans to exit
+  before the print". Proposed 10-17: for daytrade only, block just the report day itself
+  and the session before an after-close/pre-market print; caveat — real IV on an expiry
+  spanning earnings is above RV, so model premiums on those names are least reliable.
+  Pending the user's OK.
+- **budget:** MU/ASML puts would have made +$334/+$69 — budget is the user's call.
+
 ### Overnight trend options (user request 2026-10-15) — backtested, NOT adopted
 Trigger: the user's real moomoo screenshots on 10-15 — `MU261016P00870000` +201% on the
 day ($4.75 → $14.30, high $23.60) and `SNDK261016P01300000` $0.75 → $27.50 over ~a week,
