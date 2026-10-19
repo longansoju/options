@@ -275,6 +275,33 @@ i.e. the October regime lifted everything. By gate (in budget):
   Pending the user's OK.
 - **budget:** MU/ASML puts would have made +$334/+$69 — budget is the user's call.
 
+### Event-night STRANGLE test (user 10-19: "train yourself to catch this") — not adopted
+Trigger: calls bought at the 10-16 close on the beaten chip names were +25% to +227% by
+10-19 midday (model), puts −23% to −85%; a direction-free strangle was the only version
+that did not need hindsight. `research/strangle_bt.py`: 0.2σ call + 0.2σ put, Friday
+≥ 7 days out, entry at a close, exit next open / next close / 2 closes; 26 names, 5y daily
+(30,193 name-nights), 4% friction, IS/OOS by date; plus a walk-forward logistic model
+(refit yearly, test 2024-26, event-radar features) that learns which nights pay.
+
+| condition (exit next close) | IV = RV30 | IV = 1.15 × RV30 |
+|---|---|---|
+| every night | −2.4% | −18.7% |
+| SMH 2-day ≤ −4% (the 10-15/16 type) | −1.1% | −17.7% |
+| same AND Friday (the weekend just gone) | −1.0% | −17.6% |
+| FOMC nights | +3.6% | −13.7% |
+| volume > 1.5x AND range > 2 sd | **+12.8%** (IS +10.9 / OOS +14.4) | −6.0% |
+| walk-forward model top 10% (AUC 0.65) | — | −7.3% (vs −18.5% all) |
+
+**The model learns WHEN — AUC 0.61-0.65, its top decile loses a third as much — but no
+version is profitable once the options cost more than ~1.03-1.13x realized vol** (break-
+even IV: FOMC 1.03-1.08x, big-volume/big-range days 1.10-1.13x). Real IV after a 2-sd,
+1.5x-volume day sits well above that, because RV30 lags and the market prices exactly the
+volatility the model detects. Same verdict as the 09-27 overnight-straddle note: the
+positive rows are the realized-vol pricing proxy, not an edge. The selloff-weekend setup
+the user saw (10-16 → 10-19) was a coin flip even at RV pricing. **Decisive test needs
+the moomoo chain:** is real IV on the model's top-decile nights below ~1.1x RV30? Until
+then: no strangle trades; the model's nightly top names can be logged as `watch`.
+
 ### Overnight trend options (user request 2026-10-15) — backtested, NOT adopted
 Trigger: the user's real moomoo screenshots on 10-15 — `MU261016P00870000` +201% on the
 day ($4.75 → $14.30, high $23.60) and `SNDK261016P01300000` $0.75 → $27.50 over ~a week,
