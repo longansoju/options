@@ -298,6 +298,25 @@ after spread: the live +$727 is October's tape, not a pattern that "nets more". 
 denominator: $15k is premium turnover over 30 trades; peak capital at risk was ~$1.6k.
 No change to day-trade exits.
 
+### "What entry works for holding longer?" (10-20) — `research/hold_entry.py`
+20d closing-break signals (all gates, 27 names, 2y), exit FIXED = the adopted trailing exit,
+split by what was known at the entry close; IS/OOS by date; 4% friction.
+
+| entry (2-week 0.2σ) | n | IV = RV: avg (IS / OOS) | IV = 1.15 RV: avg (IS / OOS) |
+|---|---|---|---|
+| all signals | 477 | −1.5% (+4.4 / −7.3) | −3.3% (+3.3 / −10.0) |
+| **puts** | 181 | **−21.4%** (−15.3 / −26.9) | −20.2% |
+| calls | 296 | +10.7% (+15.6 / +5.6) | +6.9% (+14.0 / −0.5) |
+| with sector trend (call & SMH > 50d MA, or put & below) | 342 | +4.1% (+9.2 / −1.8) | +0.9% |
+| against sector trend | 135 | −15.6% | −14.1% |
+| **calls, SMH > 50d MA, volume ≥ 1.5x** | 55 | **+23.9%** (+39.5 / +3.7) | **+20.3%** (+26.5 / +12.3) |
+
+Held PUTS lose in every cut — never hold a put for weeks. The only cut positive in both
+halves at 1.15x RV is a CALL on a 20d closing breakout with SMH above its 50-day MA and
+≥ 1.5x volume, 2-week expiry, trailing exit. Caveats: n=55 (31/24), picked from ~40 cuts
+(data-mining risk), a 2025-26 chip bull market (calls rode the up-cycle), and the 4-week
+version of the same cut is −1.7% at 1.15x. A hypothesis to forward-test, not a rule.
+
 ### Paper STRANGLE forward test (user 10-20: "paper trade the strangle model as well")
 `research/strangle_engine.py` (+ `strangle_model.json`, refit with `fit`): run at ~15:50 ET
 each session. EXIT: yesterday's strangles sold at today's close. ENTER: names scoring above
