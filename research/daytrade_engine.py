@@ -20,6 +20,7 @@ SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 TODAY = pd.Timestamp.now(tz='America/New_York').date()
 EXPIRY = TODAY + dt.timedelta(days=(4 - TODAY.weekday()) % 7 + 14)      # Friday two weeks out (pen-test 10-06)
 EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}   # verified dates (config.py)
+NEXT_SESSION = pd.Timestamp(np.busday_offset(TODAY, 1, roll='forward')).date()
 BUDGET, TGT, STOP, MAXHOLD = 1000.0, 0.20, 0.20, 120   # pen-test 10-06
 MAXN = 10**6          # no daily cap (user decision 2026-10-07); still one trade per name per day
 PRE = pd.read_pickle('sweep_pre.pkl')
@@ -63,7 +64,9 @@ def gates(p, kind, sym):
     if kind == 'put' and p['ct3'] > 0: b.append(f"counter-trend 3d {p['ct3']:+.1f}%")
     if kind == 'call' and p['rsi'] > 70: b.append(f"RSI {p['rsi']:.0f}")
     if kind == 'put' and p['rsi'] < 32: b.append(f"RSI {p['rsi']:.0f}")
-    if EARN.get(sym) and TODAY <= EARN[sym] <= EXPIRY: b.append(f"earnings {EARN[sym]} before {EXPIRY}")
+    # day trades are flat by 15:45, so they never hold through a print: block only the report day and the
+    # session before it (user OK 2026-10-20; the old 'any print before expiry' gate was never pen-tested)
+    if EARN.get(sym) and TODAY <= EARN[sym] <= NEXT_SESSION: b.append(f"earnings {EARN[sym]} (report day / day before)")
     if sym not in EARN: b.append('no verified earnings date')   # all names, not just expansion (10-12)
     return b
 
