@@ -272,8 +272,42 @@ i.e. the October regime lifted everything. By gate (in budget):
   before the print". Proposed 10-17: for daytrade only, block just the report day itself
   and the session before an after-close/pre-market print; caveat — real IV on an expiry
   spanning earnings is above RV, so model premiums on those names are least reliable.
-  Pending the user's OK.
+  **ADOPTED 2026-10-20** (user: "your rule doesn't have to be so strict"): day-trade
+  engine blocks only `today <= earnings <= next session`. Multi-day strategies (swing,
+  momentum, strangle) keep the strict before-expiry/before-exit check.
 - **budget:** MU/ASML puts would have made +$334/+$69 — budget is the user's call.
+
+### "Hold 1-2 weeks to maximize profit" / "$700 on $15k — could anything net more?" (10-20)
+`research/hold_bt.py`: the SAME v2 day-trade entries (121 in budget, 08-24 → 10-19, 5m bars
+continuous across days, 4% spread), only the exit varied:
+
+| exit | win | avg | IS | OOS | $ on $69.6k premium | avg hold |
+|---|---|---|---|---|---|---|
+| **current same-day +20/−20/120m/15:45** | 39% | **−3.7%** | −3.3% | −3.9% | −$2,635 | 0.1d |
+| same-day +20/−20 to 15:45 | 37% | −4.2% | −5.0% | −3.6% | −$2,988 | 0.1d |
+| same-day +50/−30 | 35% | −4.4% | −6.6% | −3.0% | −$3,080 | 0.2d |
+| hold ≤5d, −50 stop, trail 30% after +50 | 39% | −13.3% | −28.3% | −3.8% | −$7,132 | 3.6d |
+| hold to 2 DTE, same trail | 40% | −12.5% | −29.4% | −1.7% | −$5,990 | 3.8d |
+| hold ≤5d, −30 stop, trail 25% after +30 | 30% | −6.4% | −16.2% | −0.1% | −$3,748 | 1.9d |
+
+**Holding these entries longer loses MORE, not less** — the 10-15 exit-grid result was for
+20-day closing-break entries, not intraday opening-range breaks; an intraday break has no
+multi-day follow-through to ride (median −54% when held). The current same-day exit is the
+best of every variant, and over the full 40 sessions (September included) it is −3.7%/trade
+after spread: the live +$727 is October's tape, not a pattern that "nets more". Note the
+denominator: $15k is premium turnover over 30 trades; peak capital at risk was ~$1.6k.
+No change to day-trade exits.
+
+### Paper STRANGLE forward test (user 10-20: "paper trade the strangle model as well")
+`research/strangle_engine.py` (+ `strangle_model.json`, refit with `fit`): run at ~15:50 ET
+each session. EXIT: yesterday's strangles sold at today's close. ENTER: names scoring above
+the model's top-decile line (0.114) → 0.2σ call + 0.2σ put, Friday ≥ 7 days out, both legs
+≤ $1,000, max 3/night; blocked if earnings today/next session or no verified date.
+`strategy=strangle`, `book=paper`, one row per leg, kept separate from the other stats.
+Backtest expectation is NEGATIVE (−7%/night at 1.15x RV): this exists to measure model
+fills against the real chain later, not because it is believed to win. First night 10-19
+close: AMZN, NVDA, GOOGL (NBIS over budget). Review at 20 nights.
+Added to the 09:15 ET scheduled task (step 7).
 
 ### Event-night STRANGLE test (user 10-19: "train yourself to catch this") — not adopted
 Trigger: calls bought at the 10-16 close on the beaten chip names were +25% to +227% by
