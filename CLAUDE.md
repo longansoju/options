@@ -277,6 +277,29 @@ i.e. the October regime lifted everything. By gate (in budget):
   momentum, strangle) keep the strict before-expiry/before-exit check.
 - **budget:** MU/ASML puts would have made +$334/+$69 — budget is the user's call.
 
+### 2026-10-21 losses (NVDA −$68, GOOGL −$108 stops; ANET +$24) — what was checked
+Both stops were 10:19-10:20 opening-range breakdowns that reversed within the hour (NVDA
+closed +1.4% on the day). NVDA's entry was marginal on both readings flagged at entry
+(relvol 1.00x, 3d −0.3%); GOOGL's was not (1.72x, −2.6%) — so "weak confirmation" explains
+one loss, not two. Tested on the v2 backtest entries (`research/margin_bt.py`, 122 entries
+08-26 → 10-21, current exits, 4% spread):
+
+| entry reading | n | win | avg | IS | OOS |
+|---|---|---|---|---|---|
+| all | 122 | 39% | −3.9% | −3.1% | −4.5% |
+| relvol < 1.10x | 49 | 39% | −4.6% | −1.9% | −5.8% |
+| relvol ≥ 1.50x | 32 | 34% | −4.8% | −3.6% | −5.9% |
+| **3-day move < 1% in the trade's direction** | 33 | 33% | **−7.2%** | −4.8% | −8.4% |
+| 3-day move ≥ 1% | 89 | 42% | −2.7% | −2.6% | −2.8% |
+
+Volume strength does NOT separate winners (stronger volume was no better). A marginal
+3-day reading DOES, in both halves: requiring ≥ 1% (not just > 0%) would have cut
+−3.1/−4.5% to −2.6/−2.8%. Caveats: IS n=11, the hypothesis came from one live loss, and the
+live book is 3-of-5 winners in that bucket (JPM +0.1% won, JPM +0.3% and NVDA −0.3% lost).
+Proposed 10-22: day-trade counter-trend gate threshold 0% → 1%. Pending the user's OK.
+Not a lesson: the earnings relaxation (neither loss was earnings-related) or the SMH filter
+(already rejected 10-08). Two stops in a strategy with a ~39% backtest win rate is normal.
+
 ### "Hold 1-2 weeks to maximize profit" / "$700 on $15k — could anything net more?" (10-20)
 `research/hold_bt.py`: the SAME v2 day-trade entries (121 in budget, 08-24 → 10-19, 5m bars
 continuous across days, 4% spread), only the exit varied:
