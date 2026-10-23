@@ -60,8 +60,10 @@ def pick(sym, S, kind, ts, rv):
 def gates(p, kind, sym):
     b = []
     if p['chop']: b.append(f"whipsaw {p['up5']}/{p['dn5']}")
-    if kind == 'call' and p['ct3'] < 0: b.append(f"counter-trend 3d {p['ct3']:+.1f}%")
-    if kind == 'put' and p['ct3'] > 0: b.append(f"counter-trend 3d {p['ct3']:+.1f}%")
+    # 3-day move must be >= 1% in the trade's direction (user OK 2026-10-23; research/margin_bt.py:
+    # entries with |3d| < 1% averaged -7.2% vs -2.7%, worse in both halves)
+    if kind == 'call' and p['ct3'] < 1.0: b.append(f"counter-trend 3d {p['ct3']:+.1f}% (need >= +1%)")
+    if kind == 'put' and p['ct3'] > -1.0: b.append(f"counter-trend 3d {p['ct3']:+.1f}% (need <= -1%)")
     if kind == 'call' and p['rsi'] > 70: b.append(f"RSI {p['rsi']:.0f}")
     if kind == 'put' and p['rsi'] < 32: b.append(f"RSI {p['rsi']:.0f}")
     # day trades are flat by 15:45, so they never hold through a print: block only the report day and the

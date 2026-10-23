@@ -296,7 +296,8 @@ Volume strength does NOT separate winners (stronger volume was no better). A mar
 3-day reading DOES, in both halves: requiring ≥ 1% (not just > 0%) would have cut
 −3.1/−4.5% to −2.6/−2.8%. Caveats: IS n=11, the hypothesis came from one live loss, and the
 live book is 3-of-5 winners in that bucket (JPM +0.1% won, JPM +0.3% and NVDA −0.3% lost).
-Proposed 10-22: day-trade counter-trend gate threshold 0% → 1%. Pending the user's OK.
+Proposed 10-22: day-trade counter-trend gate threshold 0% → 1%. **ADOPTED 2026-10-23**
+(user: "try your proposed strategies and see how we do"): calls need 3d ≥ +1%, puts ≤ −1%.
 Not a lesson: the earnings relaxation (neither loss was earnings-related) or the SMH filter
 (already rejected 10-08). Two stops in a strategy with a ~39% backtest win rate is normal.
 
@@ -339,6 +340,14 @@ halves at 1.15x RV is a CALL on a 20d closing breakout with SMH above its 50-day
 ≥ 1.5x volume, 2-week expiry, trailing exit. Caveats: n=55 (31/24), picked from ~40 cuts
 (data-mining risk), a 2025-26 chip bull market (calls rode the up-cycle), and the 4-week
 version of the same cut is −1.7% at 1.15x. A hypothesis to forward-test, not a rule.
+**PAPER-TRADED from 2026-10-23** (user OK): `research/trendhold_engine.py`, run at ~15:50 ET
+after the strangle step. `strategy=trendhold`, `book=paper`, kept separate. CALL only: close
+> prior 20-session high, SMH > its 50-day MA, volume ≥ 1.5x (scaled to a full day), not chop,
+3d ≥ 0, RSI ≤ 70, earnings strictly after expiry, one signal per name per 5 sessions;
+0.2σ call 2 Fridays out, ≤ $1,000, max 3/night. Exit = trailing (−50% stop; after +50%,
+exit 30% off the peak; 2-DTE close), checked each session on that day's high/low, peak
+kept in `research/trendhold_state.json` (commit it). First scan 10-22: SMH 523 vs 50d MA
+576 → no entries until the chip complex recovers above its 50-day. Review at 10 exits.
 
 ### Paper STRANGLE forward test (user 10-20: "paper trade the strangle model as well")
 `research/strangle_engine.py` (+ `strangle_model.json`, refit with `fit`): run at ~15:50 ET
