@@ -301,6 +301,14 @@ Proposed 10-22: day-trade counter-trend gate threshold 0% → 1%. **ADOPTED 2026
 Not a lesson: the earnings relaxation (neither loss was earnings-related) or the SMH filter
 (already rejected 10-08). Two stops in a strategy with a ~39% backtest win rate is normal.
 
+### 2026-10-26 review (user: "review last night's trades") — `research/passed_review.py` list for 10-26
+1 taken (AAPL call −20%, −$70), 11 passed. Passed signals priced as if taken: in budget
+n=7, 43% win, −3.4% avg, −$21 → the gates cost nothing (counter-trend-only n=4: +0.1%).
+Best misses: NBIS call +20% (+$181, blocked 3d −7.4%) — offset by NVDA −20% and AVGO −5%
+blocked the same way; WDC call +20% (+$344) and COHR +12% were OVER BUDGET ($1,721 / $1,512).
+No signal was blocked only by the new 1% threshold. Watch item (n=1, not a lesson): AAPL at
+RV 15% stopped on a 0.5% underlying move — track whether low-RV names stop out more.
+
 ### "Hold 1-2 weeks to maximize profit" / "$700 on $15k — could anything net more?" (10-20)
 `research/hold_bt.py`: the SAME v2 day-trade entries (121 in budget, 08-24 → 10-19, 5m bars
 continuous across days, 4% spread), only the exit varied:
