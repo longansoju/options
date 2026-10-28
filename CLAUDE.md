@@ -309,6 +309,30 @@ blocked the same way; WDC call +20% (+$344) and COHR +12% were OVER BUDGET ($1,7
 No signal was blocked only by the new 1% threshold. Watch item (n=1, not a lesson): AAPL at
 RV 15% stopped on a 0.5% underlying move — track whether low-RV names stop out more.
 
+### PEER-REPORT NIGHTS — the MU 960C (10-27 → 10-28) and the first REAL implied-vol reading
+User screenshot (moomoo): `MU261028C00960000` closed 10-27 at **$2.43** (day low $1.38) with MU
+$929.16; SK Hynix (now US-listed) reported record Q3 after the US close and its ADR rose 6%
+after hours; MU traded $969 pre-market (+4.35%) → the call opens near $9+ (~3.7x).
+**Real IV from that quote: 0.51 = 1.00x RV30** (1 trading day to expiry) — the market did NOT
+price a premium for the peer event. First real-chain data point the system has had.
+`research/peer_event.py`: MU/WDC/STX/SNDK, 10y, peer report days inferred from SK Hynix /
+Samsung volume spikes in their usual windows (approximate ±1 day), 1-DTE ~1 daily-σ OTM
+legs bought at the close, sold at the next open, overnight-variance pricing, 10% friction:
+
+| | n | mean abs gap (gap-sd) | big gap > 1 sd | strangle IV=RV (IS / OOS) | strangle IV=1.3x |
+|---|---|---|---|---|---|
+| all nights | 7,720 | 0.72 | 22% | −10.3% (−11.8 / −8.9) | −59.6% |
+| **peer-report nights** | 231 | **0.97** | **32%** | **+30.0% (+42.6 / +17.7)** | −39.3% |
+
+Peer nights gap ~35% bigger and the strangle is positive in BOTH halves **if** the options
+are priced at RV — which the one real quote says they were. At 1.3x RV it loses. Calls alone
+fail the halves test (−16.9 / +27.9); direction is still a coin flip (SK Hynix's net income
+MISSED and MU still popped). Proposed 10-28 (pending user OK): paper-trade a 1-DTE ~1σ
+strangle on MU (≤ $1,000; this one was ~$243 + a ~$2-3 put) at the close before each
+scheduled memory-peer report (SK Hynix quarterly, after the US close; Samsung preliminary,
+~7th-8th of Jan/Apr/Jul/Oct, Korean morning = US evening), sold at the next open — and get a
+real quote screenshot each time to log the implied vol. ~8 events/year; n will stay small.
+
 ### "Hold 1-2 weeks to maximize profit" / "$700 on $15k — could anything net more?" (10-20)
 `research/hold_bt.py`: the SAME v2 day-trade entries (121 in budget, 08-24 → 10-19, 5m bars
 continuous across days, 4% spread), only the exit varied:
