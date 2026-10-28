@@ -332,6 +332,17 @@ strangle on MU (≤ $1,000; this one was ~$243 + a ~$2-3 put) at the close befor
 scheduled memory-peer report (SK Hynix quarterly, after the US close; Samsung preliminary,
 ~7th-8th of Jan/Apr/Jul/Oct, Korean morning = US evening), sold at the next open — and get a
 real quote screenshot each time to log the implied vol. ~8 events/year; n will stay small.
+**Robustness check 10-28 (`research/peer_event2.py`) — NOT adopted as a paper strategy.** Per event
+(73 events; the 4 names on one night are one bet): +30.8% at IV=RV but t +1.1, win 32%, median −41%
+— it is a few fat-tail nights (MU 2026-04-08 +563%). Break-even IV ≈ 1.08x RV (1.10x: −2.0%; OOS
+already −11.0%). **MU alone is negative even at IV=RV (−12.6%).** By peer: SK Hynix nights +65% at
+RV / +9.5% at 1.15x (n=37); Samsung prelim nights −4.4% / −37.9%. Dating is unreliable: report days
+are inferred from Korean volume spikes, and the 10-27 event itself landed on the pre-report run-up
+day (Korean 10-27), not the report (Korean 10-28) — so the sample mixes real and wrong nights.
+Direction: the Korean peer's own reaction is known before the US open (Seoul closes 02:30 ET);
+corr with MU open→close +0.32, peer < −3%: MU open→close −1.30% (n=11), peer > +3%: +1.09% but only
+53% up (n=17) — too small to be a rule. Decision: log SK Hynix report nights as `watch` with a
+real-quote IV reading; re-test with VERIFIED historical report dates before any paper rule.
 **"But MU had already risen 2-3 days straight" (10-28) — `research/streak_bt.py`:** MU closed up
 10-23/26/27 (3d +8.4%) on FALLING volume (0.71x/0.76x/0.61x), 16% under its 20d high. Up-streaks
 predict nothing: next-open up 52-53% at streak ≥2/3/4 vs 53% on any day; a 0.2σ call bought at the
