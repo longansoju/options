@@ -165,6 +165,11 @@ real-money trading until the record proves the decisions out. Rules:
   gate problems. Candidates screened and waiting: QCOM, NFLX, KLAC, MA, UBER, AXP.
   Failed the budget screen (2-week 0.2σ call > $1,000): TSLA, AMD, AMAT, LRCX, LLY,
   GS, CAT, COIN, ARM, CEG.
+  **Ambiguous-date rule (2026-10-28, VRT):** config had VRT 10-21 ("10-21 or 10-28", took the earlier).
+  10-21 passed with no report, nobody re-checked, and on 10-28 — the real report day (BMO, +16% gap,
+  4.3x volume) — the engine fired a VRT call that the report-day block should have stopped. VOIDED
+  before booking (rule fails on clean data). When the earlier of two candidate dates passes without a
+  print, re-verify THAT DAY and switch to the later date — same failure as XOM 10-09.
   Bug fixed the same day: the earnings gate blocked any date ≤ expiry, including
   dates already PAST (JPM would have stayed blocked after its 10-13 report). Now
   blocks only `today ≤ earnings ≤ expiry`.

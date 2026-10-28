@@ -113,7 +113,7 @@ FOCUS_AI_SEMI_IT: list[str] = [
 DAYTRADE_EXPANSION: list[str] = ["GOOGL", "PLTR", "JPM", "XOM", "V"]
 DAYTRADE_EARNINGS: dict[str, str] = {
     # focus names reporting inside the current windows (verified 10-05/10-06)
-    "ASML": "2026-10-14", "TSM": "2026-10-15", "VRT": "2026-10-21",   # VRT: sources say 10-21 or 10-28
+    "ASML": "2026-10-14", "TSM": "2026-10-15", "VRT": "2026-10-28",   # company IR: Q3 BMO 10-28 (10-21 was wrong; caught 10-28 when a VRT call fired on the report day)
     "MSFT": "2026-10-28", "AMZN": "2026-10-29", "ANET": "2026-11-02",
     "NVDA": "2026-11-17", "AVGO": "2026-12-10",
     "SMCI": "2026-11-03",
