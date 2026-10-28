@@ -332,6 +332,13 @@ strangle on MU (≤ $1,000; this one was ~$243 + a ~$2-3 put) at the close befor
 scheduled memory-peer report (SK Hynix quarterly, after the US close; Samsung preliminary,
 ~7th-8th of Jan/Apr/Jul/Oct, Korean morning = US evening), sold at the next open — and get a
 real quote screenshot each time to log the implied vol. ~8 events/year; n will stay small.
+**"But MU had already risen 2-3 days straight" (10-28) — `research/streak_bt.py`:** MU closed up
+10-23/26/27 (3d +8.4%) on FALLING volume (0.71x/0.76x/0.61x), 16% under its 20d high. Up-streaks
+predict nothing: next-open up 52-53% at streak ≥2/3/4 vs 53% on any day; a 0.2σ call bought at the
+streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/−3.7%). The MU-like case
+(streak ≥3 below the 20d MA) was WORSE: gap −0.30%, call −7.1% (IS −5.5 / OOS −8.2), n=219. MU-only
++3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
+report was.
 
 ### "Hold 1-2 weeks to maximize profit" / "$700 on $15k — could anything net more?" (10-20)
 `research/hold_bt.py`: the SAME v2 day-trade entries (121 in budget, 08-24 → 10-19, 5m bars
