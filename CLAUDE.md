@@ -562,6 +562,31 @@ It lets the multi-day flips run while still banking most of a round-trip. Execut
 GMT+8 as a resting trailing-stop order. **ADOPTED for swing/momentum 2026-10-15** on the
 user's OK. Daily-bar test, stop checked before the trail — conservative.
 
+### 1-DAY TICKETS on big-volume nights — PAPER-TRADED from 2026-10-29 (user: "they're low cost so they deserve a chance")
+`research/lottery_event.py`: 27 names, 2022-26 daily (30,578 name-nights), ~1 daily-σ call + put
+bought at the close, overnight-variance pricing + put skew, 10% friction, one bet per night.
+
+| night (sell both at the next OPEN) | IV = RV | 1.15x | 1.3x | 1.5x |
+|---|---|---|---|---|
+| every night | −16.0% | −27.8% | −34.1% | −38.1% |
+| FOMC nights (38) | +49.6% (IS +28.9 / OOS +70.3) | +16.7% (IS +2.2) | −1.4% | −15.0% |
+| memory-peer nights (35) | +7.7% (IS −30.6 / OOS +43.9) | −11.3% | −21.7% | −29.3% |
+| **volume > 1.5x AND range > 2 sd (561 nights)** | **+69.1%** (+71.7 / +66.4) | **+29.7%** | **+8.3%** | −1.6% |
+
+A resting +100% limit through the next session instead of selling at the open is no better (+4% vs
++8% at 1.3x). Read honestly: break-even ≈ 1.4x RV30; the MEDIAN ticket loses ~47%; without the best
+2% of nights the big-volume row is +12% at RV and −20% at 1.3x; calls carry it (2022-26 bull:
+calls +131% mean / −64% median, puts +25% / −73%). Real 1-DTE IV after a big day is UNMEASURED and
+probably above RV30 (RV lags) — the forward test exists to find out. Engine `research/lottery_engine.py`
+(15:50 ET, after trend-hold): trigger = volume > 1.5x AND range > 2 sd (FOMC alone is not a trigger),
+1 contract each of the ~1σ call + put expiring NEXT session — DAILY-expiry names (assumed: NVDA,
+AAPL, MSFT, AMZN, META, GOOGL, MU — confirm on moomoo) any night, others only Thursday night → Friday;
+pair ≤ $300, max 3 names/night, blocked on earnings today/next session; sold at the 09:30 ET open.
+`strategy=lottery`, `book=paper`, separate stats. Ask the user for a real quote on each entry.
+Review at 20 nights: compare real quoted IV with RV30 — if real IV ≥ ~1.4x RV, stop it.
+Note: the backtest's big nights were mostly weekly-only names (CRDO/STX/NVTS/COHR/DELL/SMCI); the
+expiry restriction means the live sample is smaller and tilted to mega-caps.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
