@@ -28,7 +28,7 @@ def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 def bs(S, K, T, v, k):
     T = max(T, 1e-7); d1 = (math.log(S / K) + v * v / 2 * T) / (v * math.sqrt(T)); d2 = d1 - v * math.sqrt(T)
     return S * N(d1) - K * N(d2) if k == 'call' else K * N(-d2) - S * N(-d1)
-def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 200 else 2.5 if S >= 100 else 1.0 if S >= 25 else 0.5
+def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 else 1.0 if S >= 25 else 0.5   # 10-30: $5 grid at $200-500 put NVDA tickets at ~1.8 sigma
 
 
 def run():
