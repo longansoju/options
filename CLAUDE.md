@@ -356,6 +356,31 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### Month review 11-01 (user: "losses that could've been avoided, wins we could've taken — improve") — NO rule change
+`research/month_review.py` (every ORB signal 08-26 → 10-30 rebuilt on 5m bars, gates RECORDED not applied,
+617 signals, 99 pass today's rules; 4% spread; split into halves AND thirds P1 08-26..09-16 / P2 09-17..10-08
+/ P3 10-09..10-30) + `research/regime_test.py`. Market: SMH 553 → 631 (10-02) → 523 (−17% in four weeks).
+- **The result is the regime, again.** Taken set: P1 +0.2%, **P2 −8.0%** (the choppy late-Sep rally), P3 +1.2%
+  (the October selloff; puts +4.7%). Live day trades (38, +$809 before spread) track P3. A pre-specified
+  regime filter (SMH 10-day efficiency ratio, IS-median threshold) FAILED — trending days were worse IS.
+- **Passed signals were right to pass:** blocked only by the 3-day gate n=215, −5.6% (negative in all three
+  periods); RSI n=13 −6.8%; whipsaw-only n=14 −0.1%; over budget n=55 −3.4% (P3 +2.5% only) — a bigger
+  budget adds volume, not edge.
+- **No entry filter is robust** (≈25 cuts, so a few will look good by chance): gap against the trade (31,
+  −6.1%), opening range < 1% (19, −5.8%), RV30 < 25% (34, −6.9%) and entries after 13:00 (21, −7.2%, worse
+  in all three periods but contradicts the 10-08 after-noon test) each fail at least one period or are
+  cutoff-shopping. Tracked as watch items, re-test at n=60 live.
+- **Exits:** 9 variants; none beats the current +20/−20/120m in every period (trail arm +15 / give back
+  30%: −3.1% vs −3.3% overall, worse in P1). No change.
+- **Live audit of the 1% gate (adopted 10-23):** of the live day trades it would have blocked 2 losers
+  (JPM 10-16, NVDA 10-21: −$136) and 3 winners (AAPL 10-08, JPM 10-14, NVDA 10-14: +$277) — net −$141 live,
+  against the backtest's −7.2% for that bucket (n=33). Kept; this is the first live counter-evidence.
+- **Strangles (24 over 9 nights, +$697):** P&L is the realized move (corr 0.95 with |move| in sd): ≥ 1-sd
+  moves +24% (10), < 1 sd −7.3% (14). Higher model scores did WORSE live (≥0.20: +2.7%, <0.20: +9.5%) — no
+  sign yet the ranking works; a volatility bet that paid in a volatile month. Review at 20 nights as planned.
+- What did improve this week was data hygiene, not rules: VRT/NBIS earnings dates were wrong, COHR/NVTS/
+  MPWR/DELL had none (both kinds blocked or mis-allowed signals), and the 1-day-ticket strike grid bug.
+
 ### "Hold 1-2 weeks to maximize profit" / "$700 on $15k — could anything net more?" (10-20)
 `research/hold_bt.py`: the SAME v2 day-trade entries (121 in budget, 08-24 → 10-19, 5m bars
 continuous across days, 4% spread), only the exit varied:
