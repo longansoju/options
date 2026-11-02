@@ -356,6 +356,17 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### Data accuracy check 11-02 (user: "is your data even accurate, since when was nvda 202.90")
+Audited every 15:50-ET entry (strangles, 1-day tickets) against 5m/1m bars at the entry minute: 10-19 → 10-29
+within ±0.1-0.26% of the true print, but on **10-30 the 5m-rebuilt daily bar was ~25-30 min stale** — NVDA ticket
+logged 202.90 vs 204.91 live (−1.0%), NVDA strangle 202.72 vs 203.45, AMZN/MSFT −0.2/−0.3%. For a 1-DTE ticket a
+1% spot error is ~0.5 daily σ: the NVDA pair was booked at $50 instead of ~$73 (+168% → **+84%** corrected).
+Fixed: the 10 rows repriced (contracts kept, premium re-marked at the true spot, notes appended); all three
+15:50 engines now price entries off `er.live_price()` (latest 1m print) and print its age. Separately, on 11-02
+**Yahoo's own feed ran ~11 min behind** (meta regularMarketTime 09:59 at 10:10) — nothing in our pipeline; the
+day-trade engine heartbeat now shows `feed lag`. Paper fills on a lagged feed are at the bar's price (no
+lookahead), but a live trader acting on the alert would be that many minutes late.
+
 ### Loss audit of the whole record (user 11-02: "was there a way to prevent them?") — `research/loss_audit.py`
 74 closed swing / momentum / day trades (paper, real and the 09-14 watch basket) re-scored at entry with TODAY's
 rules; winners scored the same way so a rule only counts if it removes more losing than winning dollars.
