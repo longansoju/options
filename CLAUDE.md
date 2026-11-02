@@ -375,6 +375,26 @@ of equity, and wins enlarge the next position. `bankroll.summary()` also shows a
 trade / trend-hold, 10% tickets) next to the model-priced equity. The 10-30 strangles and tickets are October's
 book and are excluded.
 
+### 2-3 week options in the CURRENT tape (user 11-02: "don't only follow the day trade engine ... 2-3 weeks dte")
+`research/swing_now.py`: 5 years daily (incl. 2022's bear market), 26 names, 1,342 gated 20d closing-break
+signals, 0.2σ, trailing exit, 4% friction, IS/OOS split 2024-06-11. Four PRE-SPECIFIED cuts (no sweep):
+
+| cut | n | 2-wk @1.0x RV | 2-wk @1.15x (IS / OOS) | 3-wk @1.15x (IS / OOS) |
+|---|---|---|---|---|
+| all signals | 1,342 | −2.5% | −6.1% (−8.5 / −3.4) | −8.9% |
+| **A calls, SMH > 50d, vol ≥ 1.5x (live trend-hold)** | 156 | +10.1% | **+7.9% (+4.6 / +12.0)** | +0.9% (+2.8 / −1.5) |
+| B puts, SMH < 50d, vol ≥ 1.5x (its mirror) | 112 | +4.4% | +1.1% (+6.1 / **−4.5**) | −6.0% |
+| C calls, QQQ > 50d, vol ≥ 1.5x, non-semis | 64 | +5.4% | −3.1% (**−17.9** / +10.8) | −8.3% |
+| D puts, QQQ < 50d, vol ≥ 1.5x, non-semis | 45 | +10.4% | +11.4% (+0.4 / +24.0) | +0.4% |
+
+Verdict: **A stays the only multi-week entry, and 2 weeks beats 3** (the extra week is theta without extra
+edge). The downtrend versions fail: B is negative OOS (positive only in 2022), D is n=45 with years
+swinging −33% to +25%. Today (10-30 close) SMH 523 < 50d 573 and QQQ 691 < 50d 725 — so there is NO
+validated 2-3 week trade to put the $1,000 into right now; forcing one would be the failure mode this
+book warns about. Capital priority when signals compete: trend-hold (best evidence, ≤ 50% of equity) →
+1-day tickets (≤ 10% per pair) → day trades (cash left intraday; flat by 15:45, so they never block an
+overnight entry); strangles unfunded. Max overnight commitment is 70% of equity (50% + 2 × 10%).
+
 ### Month review 11-01 (user: "losses that could've been avoided, wins we could've taken — improve") — NO rule change
 `research/month_review.py` (every ORB signal 08-26 → 10-30 rebuilt on 5m bars, gates RECORDED not applied,
 617 signals, 99 pass today's rules; 4% spread; split into halves AND thirds P1 08-26..09-16 / P2 09-17..10-08
