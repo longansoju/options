@@ -87,7 +87,7 @@ def gates(p, kind, sym):
 
 
 def say(now, msg):
-    print(f"[{now.strftime('%H:%M')}ET/{(now + pd.Timedelta(hours=12)).strftime('%H:%M')}SGT] {msg}", flush=True)
+    print(f"[{now.strftime('%H:%M')}ET/{now.tz_convert('Asia/Singapore').strftime('%H:%M')}SGT] {msg}", flush=True)
 
 
 st = json.load(open(ST)) if os.path.exists(ST) else {'pos': {}, 'done': [], 'rej': [], 'hb': None}
