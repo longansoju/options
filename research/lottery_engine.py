@@ -15,15 +15,17 @@ and without the best 2% of nights it is +12% at RV / -20% at 1.3x. Break-even is
      for that name (DAILY names: any night; others: Thursday night -> Friday expiry). ~1 daily-sigma
      call + put, 1 contract each, pair <= $300, max 3 names/night ranked by volume x range.
      Blocked: earnings today or next session (IV on a print night is far above RV - model meaningless).
+Run `python lottery_engine.py exits` at ~09:35 ET to price/book the open exits early (frees November cash).
 Model-priced (call IV = RV30, put IV = RV30 x 1.15 skew); ask the user for real quotes to log IV."""
 import sys, math, datetime as dt, warnings
 warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
+from analysis import bankroll   # November $1,000 cash book (user 11-01)
 SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 DAILY = {'NVDA', 'AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL', 'MU'}   # assumed daily expiries - confirm on moomoo
 EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}
-PAIR_MAX, MAXN, SKEW = 300.0, 3, 1.15
+PAIR_MAX, MAXN, SKEW = 300.0, 2, 1.15   # 11-01: max 2 pairs/night, each <= 10% of November equity (bankroll.py)
 def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 def bs(S, K, T, v, k):
     T = max(T, 1e-7); d1 = (math.log(S / K) + v * v / 2 * T) / (v * math.sqrt(T)); d2 = d1 - v * math.sqrt(T)
@@ -31,7 +33,7 @@ def bs(S, K, T, v, k):
 def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 else 1.0 if S >= 25 else 0.5   # 10-30: $5 grid at $200-500 put NVDA tickets at ~1.8 sigma
 
 
-def run():
+def run(exits_only=False):
     now = pd.Timestamp.now(tz='America/New_York'); today = now.date()
     nxt = pd.Timestamp(np.busday_offset(today, 1, roll='forward')).date()
     book = pd.read_csv('/home/user/options/data/recommendations.csv')
@@ -43,6 +45,7 @@ def run():
         iv = rv * (SKEW if r.direction == 'put' else 1)
         p = bs(O, float(r.strike), (1 - f) / 252, iv, r.direction) * 100
         print(f"*** LT EXIT {r.occ_code} | {r.symbol} open {O:.2f} | ~${p:.0f} vs entry ${r.entry_premium:.0f} ({p / r.entry_premium - 1:+.0%}) | sold at the 09:30 ET open")
+    if exits_only: print('   ' + bankroll.summary() + ' (before booking these exits)'); return
     fomc = today in er.FOMC_DATES
     exp_ok = lambda s: s in DAILY or nxt.weekday() == 4
     cands = []
@@ -65,7 +68,7 @@ def run():
         cands.append((volx * rng, s, S, rv, f, volx, rng, big, why))
     cands.sort(reverse=True)
     print(f"[{now:%H:%M}ET] 1-day ticket scan | FOMC day: {fomc} | candidates: " + (', '.join(f"{s} vol {vx:.1f}x rng {rg:.1f}sd" for _, s, _, _, _, vx, rg, _, _ in cands[:8]) or 'none'))
-    n = 0
+    n = 0; spent = 0.0
     for _, s, S, rv, f, volx, rng, big, why in cands:
         tag = f"{s} {S:.2f} | vol {volx:.2f}x range {rng:.1f} sd{' | FOMC' if fomc else ''} | RV30 {rv:.0%} | overnight share {f:.2f} "
         if why: print(f"   LT signal {tag}REJECTED: {'; '.join(why)}"); continue
@@ -73,12 +76,14 @@ def run():
         T = (mins / 390 + 1) / 252; sdv = rv * math.sqrt(1 / 252); st = inc(S)
         Kc = math.ceil(S * math.exp(sdv) / st) * st; Kp = math.floor(S * math.exp(-sdv) / st) * st
         pc, pp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100
-        if pc + pp > PAIR_MAX: print(f"   LT signal {tag}REJECTED: pair ${pc + pp:.0f} > ${PAIR_MAX:.0f}"); continue
+        cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
+        if pc + pp > cap: print(f"   LT signal {tag}REJECTED: pair ${pc + pp:.0f} > ${cap:.0f} (November book: 10% of equity, within cash)"); continue
         occ = lambda k, K: f"{s}{nxt.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         print(f"*** LT ENTRY {tag}| CALL {occ('C', Kc)} ~${pc:.0f} + PUT {occ('P', Kp)} ~${pp:.0f} = ${pc + pp:.0f} | sell both at the {nxt} open")
-        n += 1
+        n += 1; spent += pc + pp
     if n == 0: print('   no 1-day tickets tonight')
+    print('   ' + bankroll.summary())
 
 
 if __name__ == '__main__':
-    run()
+    run(exits_only=len(sys.argv) > 1 and sys.argv[1] == 'exits')   # 'exits' at ~09:35 ET frees the cash before 10:00 day trades

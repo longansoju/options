@@ -356,6 +356,25 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### NOVEMBER $1,000 BOOK (user 11-01: "be stricter with the budget. we will only use $1000 to trade for the month. make sure to make the most out of it")
+Read as a $1,000 CASH account for November (`analysis/bankroll.py`, START 2026-11-02): every funded paper trade
+(book=paper, created ≥ START) is paid from it, proceeds return on close, so wins compound and losses shrink the
+next trade. Caps are fractions of current EQUITY, always within available cash:
+- **day trade ≤ 50% of equity, max 2 open** (−20% stop = ≤ 10% of equity per trade). The engine re-reads the book
+  each signal (`dt_budget`); a $500 cap pushes some strikes toward 0.4σ or skips them. Checked first: in-budget
+  ≤ $500 signals did no worse than $500-1,000 ones (−3.4% vs −3.2%, month_review signals).
+- **1-day ticket pair ≤ 10% of equity, max 2 pairs/night** (the premium can go to zero). Exits at the open are
+  booked at ~09:35 ET (`lottery_engine.py exits`) so the cash is back before the 10:00 day-trade window.
+- **trend-hold ≤ 50% of equity, max 1 open** (−50% stop = ≤ 25%) — the best-evidenced strategy, dormant while SMH
+  is under its 50-day MA.
+- **strangles NOT funded** — negative expectation at realistic IV (backtest −7%/night at 1.15x; live +$697 was the
+  October volatility). Still logged nightly as book=watch so the 20-night forward test keeps collecting data.
+Why fractions, not "spend it on the best trade": nothing here has a demonstrated edge after costs, so the way to
+"make the most" of a fixed $1,000 is to stay in the game for the month — no single trade can lose more than 10-25%
+of equity, and wins enlarge the next position. `bankroll.summary()` also shows an after-spread estimate (4% day
+trade / trend-hold, 10% tickets) next to the model-priced equity. The 10-30 strangles and tickets are October's
+book and are excluded.
+
 ### Month review 11-01 (user: "losses that could've been avoided, wins we could've taken — improve") — NO rule change
 `research/month_review.py` (every ORB signal 08-26 → 10-30 rebuilt on 5m bars, gates RECORDED not applied,
 617 signals, 99 pass today's rules; 4% spread; split into halves AND thirds P1 08-26..09-16 / P2 09-17..10-08

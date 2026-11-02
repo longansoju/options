@@ -64,7 +64,7 @@ def run():
     nxt = pd.Timestamp(np.busday_offset(today, 1, roll='forward')).date()
     smh, qqq = er.daily_frame('SMH', '1y'), er.daily_frame('QQQ', '1y')
     book = pd.read_csv('/home/user/options/data/recommendations.csv')
-    openr = book[(book.strategy == 'strangle') & (book.status == 'open') & (book.book == 'paper')]
+    openr = book[(book.strategy == 'strangle') & (book.status == 'open') & (book.book.isin(['paper', 'watch']))]   # from 11-02 new strangles are book=watch (not funded)
     px = {}
     for _, r in openr.iterrows():                                   # ---- exits first
         s = r.symbol
@@ -101,6 +101,7 @@ def run():
               f" = ${pc + pp:.0f} | exit at next close ({nxt})")
         n += 1
     if n == 0: print("   no strangle tonight")
+    else: print("   (November: strangles are NOT funded from the $1,000 book - log both legs as book=watch)")
 
 
 if __name__ == '__main__':

@@ -18,10 +18,11 @@ sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
 from analysis.harvest import whipsaw_stats
+from analysis import bankroll   # November $1,000 cash book (user 11-01)
 STATE = '/home/user/options/research/trendhold_state.json'
 SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}
-BUDGET, MAXN, SIG = 1000.0, 3, 0.2
+BUDGET, MAXN, SIG = 1000.0, 1, 0.2   # 11-01: max 1 open, <= 50% of November equity (bankroll.py)
 
 
 def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -99,7 +100,8 @@ def run():
         elif today <= EARN[s] <= exp: why.append(f'earnings {EARN[s]} before expiry {exp}')
         if s in held or s in recent: why.append('already signalled in the last 5 sessions')
         T = T_at(now, exp); K = math.ceil(S * math.exp(SIG * rv * math.sqrt(T)) / inc(S)) * inc(S); p = bs(S, K, T, rv, 'call') * 100
-        if p > BUDGET: why.append(f'call ${p:.0f} > ${BUDGET:.0f}')
+        cap = min(BUDGET, bankroll.budget('trendhold', open_now=len(openr) + n))
+        if p > cap: why.append(f'call ${p:.0f} > ${cap:.0f} (November book: 50% of equity, within cash, max 1 open)')
         tag = f"{s} {S:.2f} > 20d high {hi20:.2f} | vol {volx:.2f}x | 3d {ct3:+.1f}% | RSI {rsi:.0f} | RV30 {rv:.0%}"
         if why: print(f"   TH signal {tag} REJECTED: {'; '.join(why)}"); continue
         if n >= MAXN: print(f"   TH signal {tag} SKIPPED: max {MAXN} new per night"); continue
