@@ -356,6 +356,16 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### SNDK 261106 1120P "$1.96 → $40" (user screenshot 11-02) — why nothing flagged it
+Reconstructed (`daily_frame('SNDK')`, BS at RV): the ~$2 low was **10-28** (SNDK $1,404 after a +11.8% 3-day
+bounce, the put **1.9σ OTM**, 7 sessions left), the day before **SanDisk's FQ1 report (10-29 after the close)**;
+10-30 SNDK −13.5% on 2.8x volume → put ~$33, then ~$40 on 11-02 (SNDK $1,134). It was an earnings-direction
+ticket. Every rule blocks it: SNDK is not in any trading universe (backtests only), earnings inside the hold,
+strike > 1σ (the 0-for-10 bucket), and a put into a 3-day bounce (counter-trend). Which way an earnings print
+breaks is the coin flip the event radar cannot call; the same ticket had SanDisk rallied 13% was worth $0.
+**Second REAL implied-vol reading:** $40.30 at 10:32 ET with SNDK $1,134, 4.2 sessions left → **IV 0.75 = 1.05x
+RV30 (0.72)** — after the event, near RV, like the MU 960C (1.00x). Logged for the IV-vs-RV question.
+
 ### Data accuracy check 11-02 (user: "is your data even accurate, since when was nvda 202.90")
 Audited every 15:50-ET entry (strangles, 1-day tickets) against 5m/1m bars at the entry minute: 10-19 → 10-29
 within ±0.1-0.26% of the true print, but on **10-30 the 5m-rebuilt daily bar was ~25-30 min stale** — NVDA ticket
