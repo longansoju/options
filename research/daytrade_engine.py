@@ -185,7 +185,8 @@ while True:
             marks.append(f"{occ} ~${cur:.0f} ({(cur/p['prem']-1)*100:+.0f}%)")
         hb = pd.Timestamp(st['hb']) if st.get('hb') else None
         if ev or hb is None or (now - hb).total_seconds() >= 1800:
-            say(now, f"day-trade engine | open: {', '.join(marks) if marks else 'none'} | entries today {len(st['done']) + len(st['pos'])} (no cap)"
+            lag = max(((now - x.index[-1]).total_seconds() / 60 - 1) for x in live.values()) if live else 0
+            say(now, f"day-trade engine | open: {', '.join(marks) if marks else 'none'} | entries today {len(st['done']) + len(st['pos'])} (no cap) | feed lag {lag:.0f} min"
                      + ('' if ev else ' (heartbeat)'))
             for e_ in ev: print('   ' + e_, flush=True)
             st['hb'] = now.isoformat()

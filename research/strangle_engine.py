@@ -92,13 +92,14 @@ def run():
     for score, s, S, rv, why in cands:
         if score < M['thr'] or n >= MAXN: break
         if why: print(f"   SG signal {s} score {score:.2f} REJECTED: {'; '.join(why)}"); continue
+        S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30
         exp = friday_after(today); T = T_at(now, exp); sdv = rv * math.sqrt(T); st = inc(S)
         Kc = math.ceil(S * math.exp(SIG * sdv) / st) * st; Kp = math.floor(S * math.exp(-SIG * sdv) / st) * st
         pc, pp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv, 'put') * 100
         if pc + pp > BUDGET: print(f"   SG signal {s} score {score:.2f} REJECTED: strangle ${pc + pp:.0f} > ${BUDGET:.0f}"); continue
         occ = lambda k, K: f"{s}{exp.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         print(f"*** SG ENTRY {s} score {score:.2f} | {s} {S:.2f} RV30 {rv:.0%} | CALL {occ('C', Kc)} ~${pc:.0f} + PUT {occ('P', Kp)} ~${pp:.0f}"
-              f" = ${pc + pp:.0f} | exit at next close ({nxt})")
+              f" = ${pc + pp:.0f} | exit at next close ({nxt}) | spot = live 1m print, {age:.0f} min old")
         n += 1
     if n == 0: print("   no strangle tonight")
     else: print("   (November: strangles are NOT funded from the $1,000 book - log both legs as book=watch)")

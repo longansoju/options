@@ -81,6 +81,9 @@ def run():
         except Exception as e:
             print(f"   skip {s}: {str(e)[:40]}"); continue
         d = d.dropna(); c = d.C; S = float(c.iloc[-1])
+        if S > float(d.H.iloc[-21:-1].max()):
+            try: S, _ = er.live_price(s)   # 11-02: price the entry off the live 1m print, not the 5m-rebuilt bar
+            except Exception: pass
         hi20 = float(d.H.iloc[-21:-1].max())
         if S <= hi20: continue
         why = []

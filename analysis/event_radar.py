@@ -108,6 +108,17 @@ def daily_frame(symbol: str, rng: str = "10y") -> pd.DataFrame:
     return d.sort_index()
 
 
+def live_price(symbol: str) -> tuple[float, float]:
+    """Latest regular-session 1m close and its age in minutes. The 15:50 engines priced entries off
+    daily_frame(), whose last bar is rebuilt from 5m bars - on 2026-10-30 that was ~30 min stale
+    (NVDA logged 202.90 vs 204.75 live; a 1-DTE ticket was priced off a stale spot). Use this for S."""
+    m = fetch_chart(symbol, "1m", "1d").dropna()
+    m = m[(m.index.time >= dt.time(9, 30)) & (m.index.time < dt.time(16, 0))]
+    last = m.index[-1]
+    age = (pd.Timestamp.now(tz=last.tz) - last).total_seconds() / 60 - 1   # bar stamp = bar start
+    return float(m.C.iloc[-1]), max(age, 0.0)
+
+
 # ------------------------------------------------------------------- math utils
 
 def _norm_cdf(x):

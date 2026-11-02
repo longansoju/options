@@ -73,13 +73,14 @@ def run(exits_only=False):
         tag = f"{s} {S:.2f} | vol {volx:.2f}x range {rng:.1f} sd{' | FOMC' if fomc else ''} | RV30 {rv:.0%} | overnight share {f:.2f} "
         if why: print(f"   LT signal {tag}REJECTED: {'; '.join(why)}"); continue
         if n >= MAXN: print(f"   LT signal {tag}SKIPPED: max {MAXN}/night"); continue
+        S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30 (NVDA 202.90 vs 204.75)
         T = (mins / 390 + 1) / 252; sdv = rv * math.sqrt(1 / 252); st = inc(S)
         Kc = math.ceil(S * math.exp(sdv) / st) * st; Kp = math.floor(S * math.exp(-sdv) / st) * st
         pc, pp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100
         cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
         if pc + pp > cap: print(f"   LT signal {tag}REJECTED: pair ${pc + pp:.0f} > ${cap:.0f} (November book: 10% of equity, within cash)"); continue
         occ = lambda k, K: f"{s}{nxt.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
-        print(f"*** LT ENTRY {tag}| CALL {occ('C', Kc)} ~${pc:.0f} + PUT {occ('P', Kp)} ~${pp:.0f} = ${pc + pp:.0f} | sell both at the {nxt} open")
+        print(f"*** LT ENTRY {tag}| CALL {occ('C', Kc)} ~${pc:.0f} + PUT {occ('P', Kp)} ~${pp:.0f} = ${pc + pp:.0f} | sell both at the {nxt} open | spot = live 1m print {S:.2f}, {age:.0f} min old")
         n += 1; spent += pc + pp
     if n == 0: print('   no 1-day tickets tonight')
     print('   ' + bankroll.summary())
