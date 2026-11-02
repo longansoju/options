@@ -356,6 +356,24 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### Loss audit of the whole record (user 11-02: "was there a way to prevent them?") — `research/loss_audit.py`
+74 closed swing / momentum / day trades (paper, real and the 09-14 watch basket) re-scored at entry with TODAY's
+rules; winners scored the same way so a rule only counts if it removes more losing than winning dollars.
+- **Today's entry rules would have blocked 30 trades: 25 losers (−$16,551) and 5 winners (+$3,477).** The 44 that
+  pass: 15 losers (−$1,461), 29 winners (+$4,457) → +$2,996. All 5 REAL-money losers (BKNG, AAPL, VST, MRVL, NVO,
+  −$642) would have been blocked (strikes 1.1-1.6σ, VST also counter-trend, NVO RSI 73).
+- By rule (a trade can carry several): **position size > $1,000 — 9 trades, −$14,123 of losses vs +$3,221 of wins**
+  (MU $8,410 call alone −$4,781; DELL/ASML/MPWR/LLY $1.6-3.0k each) — the single biggest cause, and it is the rule
+  the user just tightened; strike > 0.6σ 21 trades (−$7,824 vs +$256); counter-trend 11 (−$6,539, zero winners);
+  whipsaw 7 (−$6,832 vs +$173); earnings not checked 4 (−$2,050, zero winners).
+- **Exits:** the 35 multi-day trades booked −$10,945; re-run with a resting −50% stop + the trailing exit, −$257
+  (model path). Several stops were executed late at −76% to −85%, and big peaks round-tripped.
+- **The 15 losses no rule catches (−$1,461)** are mostly −20% day-trade stops — the normal cost of a ~40%-win
+  strategy; two (JPM 10-16, NVDA 10-21) are caught by the newer 1% gate.
+- **Hindsight caveat:** most of these rules were DERIVED from these very trades, so this shows they fit the past,
+  not that they predict. The forward evidence is what came after they were adopted (October day trades, the
+  5-year trend tests) — positive, but regime-dependent.
+
 ### NOVEMBER $1,000 BOOK (user 11-01: "be stricter with the budget. we will only use $1000 to trade for the month. make sure to make the most out of it")
 Read as a $1,000 CASH account for November (`analysis/bankroll.py`, START 2026-11-02): every funded paper trade
 (book=paper, created ≥ START) is paid from it, proceeds return on close, so wins compound and losses shrink the
