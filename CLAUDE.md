@@ -356,6 +356,19 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### MU 261102 840P "$0.04 → $10.48" (user screenshot 11-03) — what we saw, and the same-day-option test
+MU fell 884.89 → 833.59 on 11-02 (−5.8%, a steady slide all session). The day-trade engine DID flag the
+breakdown: MU put at 11:18 ET, 869.48 (below the 870.77 opening-range low) — REJECTED by the whipsaw gate
+(2 up / 3 down big days); the 2-week 0.2σ vehicle would also have cost ~$3,600 (7x the November $500 cap).
+Priced as if taken it would have hit +20% at 12:35. The screenshot's $0.04 was the 0DTE put at the open
+(MU ~885, ~1.5 daily σ OTM) — a direction bet on the whole day, the parked "0DTE lottery" idea.
+**Tested the obvious fix — buy a SAME-DAY option at the confirmed break instead** (`research/zerodte_bt.py`,
+175 month_review ORB signals on the 7 daily-expiry names, 0.5/1.0/1.5 remaining-session σ, BS at RV30, +100% /
+−50% / 15:45, 10% friction): **−32% to −33% avg, 18% win, negative in every period (P1 −47%, P2 −35%, P3
+−21%)**; signals that pass today's gates were worse (−50%, n=46); without the stop −59% to −63%. Same-day theta
+eats a confirmed break that the 2-week vehicle survives. Not adopted. (Model screen; real 0DTE quotes would
+be the decisive test, but the gap is too wide for pricing error to close.)
+
 ### SNDK 261106 1120P "$1.96 → $40" (user screenshot 11-02) — why nothing flagged it
 Reconstructed (`daily_frame('SNDK')`, BS at RV): the ~$2 low was **10-28** (SNDK $1,404 after a +11.8% 3-day
 bounce, the put **1.9σ OTM**, 7 sessions left), the day before **SanDisk's FQ1 report (10-29 after the close)**;
