@@ -8,6 +8,7 @@ and caps are a fraction of current EQUITY (so they shrink after losses and grow 
   day trade   <= 50% of equity (a -20% stop = 10% of equity at most), max 2 open at once
   1-day pair  <= 10% of equity per pair, max 2 pairs a night (premium can go to zero)
   trend-hold  <= 50% of equity, max 1 open (a -50% stop = 25% of equity at most)
+  same-day    <= 2% of equity, 1 ticket a day (user 11-03 'fund a tiny slot'; backtest -32%/ticket)
   strangles   not funded - logged as book=watch so the forward test keeps its data
 Book fills stay model prices (no spread); `summary()` also reports an after-cost estimate.
 """
@@ -17,9 +18,9 @@ from __future__ import annotations
 import pandas as pd
 
 START, CAPITAL = "2026-11-02", 1000.0
-CAP = {"daytrade": 0.50, "lottery": 0.10, "trendhold": 0.50}
-MAX_OPEN = {"daytrade": 2, "trendhold": 1}
-COST = {"daytrade": 0.04, "lottery": 0.10, "trendhold": 0.04, "strangle": 0.04}   # round-trip spread estimate
+CAP = {"daytrade": 0.50, "lottery": 0.10, "trendhold": 0.50, "zerodte": 0.02}
+MAX_OPEN = {"daytrade": 2, "trendhold": 1, "zerodte": 1}
+COST = {"daytrade": 0.04, "lottery": 0.10, "zerodte": 0.10, "trendhold": 0.04, "strangle": 0.04}   # round-trip spread estimate
 BOOK = "/home/user/options/data/recommendations.csv"
 
 

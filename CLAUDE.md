@@ -356,6 +356,18 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
 
+### SAME-DAY TICKET SLOT — funded from 2026-11-03 (user: "be slightly more open to such trades" → chose "fund a tiny slot")
+Chosen knowingly over "track only": the screen above says ~−32% per ticket, so the expected cost is roughly
+$7/day (~$140/month) of the November book. Rules (`research/daytrade_engine.py`, `ZDAILY`, `z_pick`): the FIRST
+confirmed opening-range break of the day (held ≥10 1m closes, VWAP side, relvol ≥ 1.0x) on a daily-expiry
+name (NVDA, AAPL, MSFT, AMZN, META, GOOGL, MU — assumed, confirm on moomoo) buys ONE same-day option ~1.0-1.5
+remaining-session σ OTM, premium ≤ 2% of November equity (`bankroll.CAP['zerodte']`, ~$23 now), gates NOT
+applied (the MU 840P case was whipsaw-blocked), earnings day / day before still blocked. Exits +100% / −50% /
+15:45 ET. Engine prints `Z0 ENTRY` / `Z0 EXIT`; book as `strategy=zerodte`, `book=paper`. Note: MU itself rarely
+fits — the 840P was ~$143 (model) at the 11:18 signal, so the slot mostly lands on the cheaper names. Review
+at 20 tickets against real quotes (the model's 0DTE prices are the weakest link); stop if the record matches
+the backtest.
+
 ### MU 261102 840P "$0.04 → $10.48" (user screenshot 11-03) — what we saw, and the same-day-option test
 MU fell 884.89 → 833.59 on 11-02 (−5.8%, a steady slide all session). The day-trade engine DID flag the
 breakdown: MU put at 11:18 ET, 869.48 (below the 870.77 opening-range low) — REJECTED by the whipsaw gate

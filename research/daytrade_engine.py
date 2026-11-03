@@ -26,6 +26,11 @@ BUDGET, TGT, STOP, MAXHOLD = 1000.0, 0.20, 0.20, 120   # pen-test 10-06; BUDGET 
 MAXN = 10**6          # no daily cap (user decision 2026-10-07); still one trade per name per day
 PRE = pd.read_pickle('sweep_pre.pkl')
 ST = f'dt_state_{TODAY}.json'
+# Same-day ticket slot (user 11-03: "be slightly more open to such trades" -> "fund a tiny slot"): the first
+# confirmed opening-range break of the day on a daily-expiry name buys a SAME-DAY option ~1 remaining-session
+# sigma OTM, <= 2% of November equity, one a day, gates NOT applied (the MU 840P case was whipsaw-blocked),
+# earnings day/day before still blocked. Exits +100% / -50% / 15:45. research/zerodte_bt.py: ~-32%/ticket.
+ZDAILY = {'NVDA', 'AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL', 'MU'}   # daily expiries assumed - confirm on moomoo
 
 
 def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -86,6 +91,20 @@ def gates(p, kind, sym):
     return b
 
 
+def z_left(ts): return max(16 * 60 - (ts.hour * 60 + ts.minute), 0) / 390 / 252
+
+
+def z_pick(sym, S, kind, ts, rv, cap):
+    T = max(z_left(ts), 1e-6); sd = rv * math.sqrt(T); sg = 1 if kind == 'call' else -1
+    step = 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 else 1.0
+    for f in (1.0, 1.25, 1.5):
+        K = (math.ceil if sg == 1 else math.floor)(S * math.exp(sg * f * sd) / step) * step
+        prem = bs(S, K, T, rv, kind) * 100
+        if 1 <= prem <= cap:
+            return dict(K=K, prem=prem, sig=abs(math.log(K / S)) / sd, occ=f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}")
+    return None
+
+
 def say(now, msg):
     print(f"[{now.strftime('%H:%M')}ET/{now.tz_convert('Asia/Singapore').strftime('%H:%M')}SGT] {msg}", flush=True)
 
@@ -128,6 +147,18 @@ while True:
                 px = float(since.loc[ref].C)
                 ev.append(f"*** DT EXIT {occ} — {reason} at {ref.strftime('%H:%M')} | ~${exitp:.0f} vs entry ${e:.0f} ({(exitp/e-1)*100:+.0f}%) | {p['sym']} {px:.2f}")
                 st['done'].append(occ); del st['pos'][occ]
+        z = st.get('z')
+        if z and not z.get('done') and live.get(z['sym']) is not None:
+            since = live[z['sym']][live[z['sym']].index > pd.Timestamp(z['ts'])]; zr = None
+            for ts, r in since.iterrows():
+                T = max(z_left(ts + pd.Timedelta(minutes=1)), 1e-6); k = z['kind']
+                w = bs(r.L if k == 'call' else r.H, z['K'], T, z['rv'], k) * 100; b = bs(r.H if k == 'call' else r.L, z['K'], T, z['rv'], k) * 100
+                if w <= z['prem'] * 0.5: zr = ('-50% stop', z['prem'] * 0.5, ts); break
+                if b >= z['prem'] * 2.0: zr = ('+100% target (resting limit)', z['prem'] * 2.0, ts); break
+                if ts.time() >= dt.time(15, 45): zr = ('15:45 time stop', bs(r.C, z['K'], T, z['rv'], k) * 100, ts); break
+            if zr:
+                ev.append(f"*** Z0 EXIT {z['occ']} — {zr[0]} at {zr[2].strftime('%H:%M')} | ~${zr[1]:.0f} vs entry ${z['prem']:.0f} ({(zr[1]/z['prem']-1)*100:+.0f}%) | {z['sym']} {float(since.loc[zr[2]].C):.2f}")
+                z['done'] = True
         # ---- entries
         n_today = len(st['done']) + len(st['pos'])
         held = {p['sym'] for p in st['pos'].values()} | {o[:len(o) - 15] for o in st['done']}
@@ -160,6 +191,19 @@ while True:
                             ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
                             st['rej'].append(key + ':stale')
                         continue
+                    if s in ZDAILY and 'z' not in st and not (EARN.get(s) and TODAY <= EARN[s] <= NEXT_SESSION):
+                        try:
+                            book = pd.read_csv('/home/user/options/data/recommendations.csv')
+                            booked = set(book[book.status == 'open'].occ_code)
+                            unb = sum(q['prem'] for o, q in st['pos'].items() if o not in booked)
+                            zc = z_pick(s, px, kind, x.index[-1], p['rv'], bankroll.budget('zerodte', book, unbooked=unb, open_now=0))
+                        except Exception:
+                            zc = None
+                        if zc:
+                            st['z'] = dict(sym=s, kind=kind, K=zc['K'], prem=zc['prem'], rv=p['rv'], ts=x.index[-1].isoformat(), px=px, occ=zc['occ'])
+                            ev.append(f"*** Z0 ENTRY {s} {kind.upper()} {zc['occ']} ~${zc['prem']:.0f} (same-day, {zc['sig']:.2f} remaining-session sigma, RV {p['rv']:.0%}) | "
+                                      f"{s} {px:.2f} broke OR {'high' if kind == 'call' else 'low'} {hi if kind == 'call' else lo:.2f}, held {run}m, relvol {rv_:.2f}x | "
+                                      f"gates NOT applied (tiny slot) | exits +100% ${zc['prem']*2:.0f} / -50% ${zc['prem']*0.5:.0f} / 15:45")
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
                     c = pick(s, px, kind, x.index[-1], p['rv'], bud) if not g else None
