@@ -367,6 +367,13 @@ applied (the MU 840P case was whipsaw-blocked), earnings day / day before still 
 fits — the 840P was ~$143 (model) at the 11:18 signal, so the slot mostly lands on the cheaper names. Review
 at 20 tickets against real quotes (the model's 0DTE prices are the weakest link); stop if the record matches
 the backtest.
+**Third REAL implied-vol reading (11-03, first one on an ordinary non-event day):** user screenshot of
+`MSFT261104C00525000` (next-day expiry, 1.86 sessions left) at $1.50 with MSFT 514.45 → **IV 0.286 = 1.30x RV30
+(22%)**; the model at RV priced it $0.73, i.e. HALF the real price. At that IV the same-day 525C booked as Z0 ticket
+#1 is ~$48, not the model $14 — over the ~$24 cap. So: (1) short-dated OTM calls trade well above RV even with no
+event, unlike the two post-event readings (1.00x, 1.05x); (2) 1.30x sits just under the 1-day tickets' ~1.4x
+break-even; (3) model-priced Z0 / LT fills are probably 2-3x too cheap, and a 2%-of-equity cap may not buy a real
+same-day ticket at all. One reading — keep collecting before changing a rule.
 
 ### MU 261102 840P "$0.04 → $10.48" (user screenshot 11-03) — what we saw, and the same-day-option test
 MU fell 884.89 → 833.59 on 11-02 (−5.8%, a steady slide all session). The day-trade engine DID flag the
