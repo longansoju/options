@@ -201,10 +201,12 @@ while True:
                             ev.append(f"DT signal {s} {kind} REJECTED: volume suspect ({rv_:.1f}x on a {rng:.1f}% day range, unexplained) | {px:.2f}")
                             st['rej'].append(key + ':volsus')
                         continue
-                    watched = (now - pd.Timestamp(st['start'])).total_seconds() / 60
-                    if run > 20 and (run - 10) > watched + 2:   # break confirmed before the engine was watching (late start) - not chased
+                    # stale-signal rule (CLAUDE.md 10-07): a break that has held > 20 consecutive 1m closes is MISSED, not
+                    # traded - whether the engine started late OR it saw the break while both slots were full (11-04: TSM
+                    # put fired 39 min after confirmation when the NBIS slot freed; SMCI 14 min late the same way)
+                    if run > 20:
                         if key + ':stale' not in st['rej'] and key not in st['rej']:   # don't re-report a gate rejection as 'missed'
-                            ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
+                            ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased - late start or slots were full) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
                             st['rej'].append(key + ':stale')
                         continue
                     Sq = float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)).any() else px
