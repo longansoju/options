@@ -374,6 +374,13 @@ the backtest.
 event, unlike the two post-event readings (1.00x, 1.05x); (2) 1.30x sits just under the 1-day tickets' ~1.4x
 break-even; (3) model-priced Z0 / LT fills are probably 2-3x too cheap, and a 2%-of-equity cap may not buy a real
 same-day ticket at all. One reading — keep collecting before changing a rule.
+**Fourth/fifth REAL readings (11-03 close, the AAPL 1-day ticket pair, user screenshots):** `AAPL261104C00337500`
+last $0.65 (model $0.11) and `AAPL261104P00327500` last $1.05 (model $0.38), AAPL 331.85, RV30 18%, the day after
+AAPL's report → **IV 1.67x (call) / 1.80x (put) RV30**; the real pair cost ~$170 vs the model $49 (3.5x) and over the
+~$118 cap. Both are ABOVE the 1-day tickets' ~1.4x break-even. Caveats: last trades after the close (not mids), and
+a post-earnings night. Short-dated readings so far: MSFT 1.30x, AAPL 1.67/1.80x — the model's LT/Z0 fills are 2-6x
+too cheap and the LT gains in the book are not real-world gains. Proposed 11-04 (pending user): price LT/Z0 entries
+at IV = 1.5x RV30 (call) / 1.7x (put) so the paper book stops overstating them, and decide at 20 nights whether to stop.
 
 ### MU 261102 840P "$0.04 → $10.48" (user screenshot 11-03) — what we saw, and the same-day-option test
 MU fell 884.89 → 833.59 on 11-02 (−5.8%, a steady slide all session). The day-trade engine DID flag the
