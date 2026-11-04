@@ -9,7 +9,8 @@ Run once per session at ~15:50 ET:  python strangle_engine.py [fit]
 Backtest verdict (CLAUDE.md, 10-19): the top decile loses ~7%/night once IV is 1.15x RV, and
 only breaks even if real IV is below ~1.1x RV30 - so this is a FORWARD TEST to compare
 model fills against the real moomoo chain, not a claimed edge. Paper fills are BS at RV30,
-the same convention as every other paper fill. Blocks: earnings today or next session (an
+the same convention as every other paper fill - REPLACED 11-04: fills now use the real Yahoo chain
+(ask in, bid out, IV logged; analysis/option_quotes.py), the model is only the no-quote fallback. Blocks: earnings today or next session (an
 overnight hold through a print is a different trade), no verified earnings date.
 `fit` refits weights from strangle_rows.pkl (run strangle_bt.py first) -> strangle_model.json."""
 import sys, os, json, math, datetime as dt, warnings
@@ -17,6 +18,7 @@ warnings.filterwarnings('ignore')
 sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
+from analysis import option_quotes as oq   # 11-04: real fills - buy at the ASK, sell at the BID (Yahoo, ~15m delayed)
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.join('/home/user/options/research', 'strangle_model.json')
 SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
@@ -72,8 +74,11 @@ def run():
         exp = dt.date.fromisoformat(r.expiry); d0 = dt.date.fromisoformat(r.created_date)
         if d0 >= today: continue
         rv = float(r.thesis.split('RV30 ')[1].split('%')[0]) / 100
-        p = bs(px[s], float(r.strike), T_at(now, exp), rv, r.direction) * 100
-        print(f"SG EXIT {r.occ_code} | {s} {px[s]:.2f} | ~${p:.0f} vs entry ${r.entry_premium:.0f} ({p / r.entry_premium - 1:+.0%}) | next-close exit")
+        m = bs(px[s], float(r.strike), T_at(now, exp), rv, r.direction) * 100
+        q = oq.fill(r.occ_code, 'sell', px[s], oq.spot_at(s) or px[s], rv=rv, T=T_at(now, exp))
+        p = q['prem'] if q else m
+        print(f"SG EXIT {r.occ_code} | {s} {px[s]:.2f} | ${p:.0f} vs entry ${r.entry_premium:.0f} ({p / r.entry_premium - 1:+.0%}) | next-close exit | model ${m:.0f} | "
+              + (f"REAL BID [{q['note']}]" if q else 'NO QUOTE - model price (flag price_source=model)'))
     cands = []
     for s in SYMS:                                                   # ---- entries
         try:
@@ -95,11 +100,16 @@ def run():
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30
         exp = friday_after(today); T = T_at(now, exp); sdv = rv * math.sqrt(T); st = inc(S)
         Kc = math.ceil(S * math.exp(SIG * sdv) / st) * st; Kp = math.floor(S * math.exp(-SIG * sdv) / st) * st
-        pc, pp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv, 'put') * 100
-        if pc + pp > BUDGET: print(f"   SG signal {s} score {score:.2f} REJECTED: strangle ${pc + pp:.0f} > ${BUDGET:.0f}"); continue
+        mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv, 'put') * 100
         occ = lambda k, K: f"{s}{exp.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
-        print(f"*** SG ENTRY {s} score {score:.2f} | {s} {S:.2f} RV30 {rv:.0%} | CALL {occ('C', Kc)} ~${pc:.0f} + PUT {occ('P', Kp)} ~${pp:.0f}"
-              f" = ${pc + pp:.0f} | exit at next close ({nxt}) | spot = live 1m print, {age:.0f} min old")
+        Sq = oq.spot_at(s) or S
+        qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T)
+        pc, pp = (qc['prem'] if qc else mc), (qp['prem'] if qp else mp)
+        if pc + pp > BUDGET: print(f"   SG signal {s} score {score:.2f} REJECTED: strangle ${pc + pp:.0f} at the ask > ${BUDGET:.0f} | model ${mc + mp:.0f}"); continue
+        src = lambda q, m: (f"REAL ASK [{q['note']}]" if q else f"NO QUOTE - model ${m:.0f} (flag price_source=model)")
+        print(f"*** SG ENTRY {s} score {score:.2f} | {s} {S:.2f} RV30 {rv:.0%} | CALL {occ('C', Kc)} ${pc:.0f} + PUT {occ('P', Kp)} ${pp:.0f}"
+              f" = ${pc + pp:.0f} | exit at next close ({nxt}) | spot = live 1m print, {age:.0f} min old"
+              f"\n      call: {src(qc, mc)}\n      put:  {src(qp, mp)}")
         n += 1
     if n == 0: print("   no strangle tonight")
     else: print("   (November: strangles are NOT funded from the $1,000 book - log both legs as book=watch)")

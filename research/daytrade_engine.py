@@ -9,12 +9,17 @@ is still NEGATIVE (-6.9% avg before friction). This is a forward test, not an ed
          nearest strike in 0.3-0.6 sigma, 1 contract, model premium <= $1,000.
          Max 3 entries/day, one per name.
   EXIT   +30% / -30% on the 1m best/worst price (stop checked first), else 15:45.
-Emits DT ENTRY / DT EXIT; Claude does every book write by protocol."""
+Emits DT ENTRY / DT EXIT; Claude does every book write by protocol.
+FILLS (11-04, user: "buy at the ASK, sell at the BID"): entries at the real Yahoo ask (~15m delayed, IV solved
+against the spot at quote time, re-priced to the live spot); caps checked against it. Positions are then marked at
+the BID-side IV from the entry quote, so stops/targets/time stops are realistic sell prices minute by minute.
+No usable quote -> model (BS at RV30) fallback, flagged in the entry line."""
 import sys, os, json, time, math, datetime as dt
 sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
 from analysis import bankroll   # November $1,000 cash book (user 11-01)
+from analysis import option_quotes as oq   # 11-04: real fills - buy at the ASK, sell at the BID (Yahoo, ~15m delayed)
 config.YF_INTER_CALL_DELAY = 0.2
 
 SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
@@ -49,16 +54,25 @@ def bs(S, K, T, v, kind):
 def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 200 else 1.0 if S >= 50 else 0.5
 
 
-def pick(sym, S, kind, ts, rv, budget=BUDGET):
+def quote_buy(occ, S, Sq, T, rv, model):
+    """Real ask fill (re-priced to the live spot) or the model fallback. ivx = the IV the position is marked at
+    afterwards (the BID-side IV, so every intraday mark is a realistic sell price)."""
+    q = oq.fill(occ, 'buy', S, Sq, rv=rv, T=T)
+    if not q: return dict(prem=model, ivx=rv, src='model', note=f'NO QUOTE - model ${model:.0f} (flag price_source=model)')
+    return dict(prem=q['prem'], ivx=q['iv_bid'] or q['iv_ask'] or rv, src='yahoo_chain', note=f"REAL ASK [{q['note']}]")
+
+
+def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None):
     T = T_at(ts); sd = rv * math.sqrt(T); step = inc(S); sg = 1 if kind == 'call' else -1
     best = None
     for f in (0.0, 0.1, 0.2, 0.3, 0.4):
         K = round(S * math.exp(sg * f * sd) / step) * step
         sig = abs(math.log(K / S)) / sd
         if sig > 0.4: continue
-        prem = bs(S, K, T, rv, kind) * 100
+        occ = f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
+        f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100); prem = f_['prem']
         if prem <= budget:
-            c = dict(K=K, prem=prem, sig=sig, occ=f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}")
+            c = dict(K=K, prem=prem, sig=sig, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
             if best is None or abs(sig - 0.2) < abs(best['sig'] - 0.2): best = c
     return best
 
@@ -94,14 +108,15 @@ def gates(p, kind, sym):
 def z_left(ts): return max(16 * 60 - (ts.hour * 60 + ts.minute), 0) / 390 / 252
 
 
-def z_pick(sym, S, kind, ts, rv, cap):
+def z_pick(sym, S, kind, ts, rv, cap, Sq=None):
     T = max(z_left(ts), 1e-6); sd = rv * math.sqrt(T); sg = 1 if kind == 'call' else -1
     step = 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 else 1.0
     for f in (1.0, 1.25, 1.5):
         K = (math.ceil if sg == 1 else math.floor)(S * math.exp(sg * f * sd) / step) * step
-        prem = bs(S, K, T, rv, kind) * 100
+        occ = f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
+        f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100); prem = f_['prem']
         if 1 <= prem <= cap:
-            return dict(K=K, prem=prem, sig=abs(math.log(K / S)) / sd, occ=f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}")
+            return dict(K=K, prem=prem, sig=abs(math.log(K / S)) / sd, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
     return None
 
 
@@ -131,7 +146,7 @@ while True:
             x = live.get(p['sym'])
             if x is None: continue
             since = x[x.index > pd.Timestamp(p['ts'])]
-            kind, K, rv, e = p['kind'], p['K'], p['rv'], p['prem']
+            kind, K, rv, e = p['kind'], p['K'], p.get('ivx', p['rv']), p['prem']
             reason = None; exitp = None
             for ts, r in since.iterrows():
                 T = T_at(ts + pd.Timedelta(minutes=1))
@@ -152,10 +167,11 @@ while True:
             since = live[z['sym']][live[z['sym']].index > pd.Timestamp(z['ts'])]; zr = None
             for ts, r in since.iterrows():
                 T = max(z_left(ts + pd.Timedelta(minutes=1)), 1e-6); k = z['kind']
-                w = bs(r.L if k == 'call' else r.H, z['K'], T, z['rv'], k) * 100; b = bs(r.H if k == 'call' else r.L, z['K'], T, z['rv'], k) * 100
+                zv = z.get('ivx', z['rv'])
+                w = bs(r.L if k == 'call' else r.H, z['K'], T, zv, k) * 100; b = bs(r.H if k == 'call' else r.L, z['K'], T, zv, k) * 100
                 if w <= z['prem'] * 0.5: zr = ('-50% stop', z['prem'] * 0.5, ts); break
                 if b >= z['prem'] * 2.0: zr = ('+100% target (resting limit)', z['prem'] * 2.0, ts); break
-                if ts.time() >= dt.time(15, 45): zr = ('15:45 time stop', bs(r.C, z['K'], T, z['rv'], k) * 100, ts); break
+                if ts.time() >= dt.time(15, 45): zr = ('15:45 time stop', bs(r.C, z['K'], T, zv, k) * 100, ts); break
             if zr:
                 ev.append(f"*** Z0 EXIT {z['occ']} — {zr[0]} at {zr[2].strftime('%H:%M')} | ~${zr[1]:.0f} vs entry ${z['prem']:.0f} ({(zr[1]/z['prem']-1)*100:+.0f}%) | {z['sym']} {float(since.loc[zr[2]].C):.2f}")
                 z['done'] = True
@@ -191,22 +207,23 @@ while True:
                             ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
                             st['rej'].append(key + ':stale')
                         continue
+                    Sq = float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)).any() else px
                     if s in ZDAILY and 'z' not in st and not (EARN.get(s) and TODAY <= EARN[s] <= NEXT_SESSION):
                         try:
                             book = pd.read_csv('/home/user/options/data/recommendations.csv')
                             booked = set(book[book.status == 'open'].occ_code)
                             unb = sum(q['prem'] for o, q in st['pos'].items() if o not in booked)
-                            zc = z_pick(s, px, kind, x.index[-1], p['rv'], bankroll.budget('zerodte', book, unbooked=unb, open_now=0))
+                            zc = z_pick(s, px, kind, x.index[-1], p['rv'], bankroll.budget('zerodte', book, unbooked=unb, open_now=0), Sq)
                         except Exception:
                             zc = None
                         if zc:
-                            st['z'] = dict(sym=s, kind=kind, K=zc['K'], prem=zc['prem'], rv=p['rv'], ts=x.index[-1].isoformat(), px=px, occ=zc['occ'])
+                            st['z'] = dict(sym=s, kind=kind, K=zc['K'], prem=zc['prem'], rv=p['rv'], ivx=zc['ivx'], src=zc['src'], ts=x.index[-1].isoformat(), px=px, occ=zc['occ'])
                             ev.append(f"*** Z0 ENTRY {s} {kind.upper()} {zc['occ']} ~${zc['prem']:.0f} (same-day, {zc['sig']:.2f} remaining-session sigma, RV {p['rv']:.0%}) | "
                                       f"{s} {px:.2f} broke OR {'high' if kind == 'call' else 'low'} {hi if kind == 'call' else lo:.2f}, held {run}m, relvol {rv_:.2f}x | "
-                                      f"gates NOT applied (tiny slot) | exits +100% ${zc['prem']*2:.0f} / -50% ${zc['prem']*0.5:.0f} / 15:45")
+                                      f"gates NOT applied (tiny slot) | exits +100% ${zc['prem']*2:.0f} / -50% ${zc['prem']*0.5:.0f} / 15:45\n      {zc['note']}")
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
-                    c = pick(s, px, kind, x.index[-1], p['rv'], bud) if not g else None
+                    c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq) if not g else None
                     if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} (November book: 50% of equity, within cash, max 2 open)')
                     if g:
                         if key not in st['rej']:
@@ -214,18 +231,18 @@ while True:
                             st['rej'].append(key)
                         continue
                     if len(st['done']) + len(st['pos']) >= MAXN: break
-                    st['pos'][c['occ']] = dict(sym=s, kind=kind, K=c['K'], prem=c['prem'], rv=p['rv'], ts=x.index[-1].isoformat(), px=px)
+                    st['pos'][c['occ']] = dict(sym=s, kind=kind, K=c['K'], prem=c['prem'], rv=p['rv'], ivx=c['ivx'], src=c['src'], ts=x.index[-1].isoformat(), px=px)
                     ev.append(f"*** DT ENTRY {s} {kind.upper()} {c['occ']} ~${c['prem']:.0f} ({c['sig']:.2f} sigma, RV {p['rv']:.0%}) | {s} {px:.2f} "
                               f"broke OR {'high' if kind == 'call' else 'low'} {hi if kind == 'call' else lo:.2f}, held {run}m, VWAP {vw:.2f}, relvol {rv_:.2f}x | "
                               f"gates PASS (whipsaw {p['up5']}/{p['dn5']}, 3d {p['ct3']:+.1f}%, RSI {p['rsi']:.0f}) | "
-                              f"exits +{TGT:.0%} ${c['prem']*(1+TGT):.0f} / -{STOP:.0%} ${c['prem']*(1-STOP):.0f} / max hold {MAXHOLD}m / 15:45")
+                              f"exits +{TGT:.0%} ${c['prem']*(1+TGT):.0f} / -{STOP:.0%} ${c['prem']*(1-STOP):.0f} / max hold {MAXHOLD}m / 15:45\n      {c['note']}")
                     break
         # ---- marks + heartbeat
         marks = []
         for occ, p in st['pos'].items():
             x = live.get(p['sym'])
             if x is None: continue
-            cur = bs(float(x.C.iloc[-1]), p['K'], T_at(x.index[-1]), p['rv'], p['kind']) * 100
+            cur = bs(float(x.C.iloc[-1]), p['K'], T_at(x.index[-1]), p.get('ivx', p['rv']), p['kind']) * 100
             marks.append(f"{occ} ~${cur:.0f} ({(cur/p['prem']-1)*100:+.0f}%)")
         hb = pd.Timestamp(st['hb']) if st.get('hb') else None
         if ev or hb is None or (now - hb).total_seconds() >= 1800:

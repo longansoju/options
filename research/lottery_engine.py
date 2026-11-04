@@ -16,12 +16,14 @@ and without the best 2% of nights it is +12% at RV / -20% at 1.3x. Break-even is
      call + put, 1 contract each, pair <= $300, max 3 names/night ranked by volume x range.
      Blocked: earnings today or next session (IV on a print night is far above RV - model meaningless).
 Run `python lottery_engine.py exits` at ~09:35 ET to price/book the open exits early (frees November cash).
-Model-priced (call IV = RV30, put IV = RV30 x 1.15 skew); ask the user for real quotes to log IV."""
+From 11-04 fills use the REAL Yahoo chain (analysis/option_quotes.py): buy at the ask, sell at the bid, IV and
+IV/RV30 logged; the model (call IV = RV30, put IV = RV30 x 1.15 skew) is the fallback only when no quote exists."""
 import sys, math, datetime as dt, warnings
 warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
 from analysis import bankroll   # November $1,000 cash book (user 11-01)
+from analysis import option_quotes as oq   # 11-04: real fills - buy at the ASK, sell at the BID (Yahoo, ~15m delayed)
 SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 DAILY = {'NVDA', 'AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL', 'MU'}   # assumed daily expiries - confirm on moomoo
 EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}
@@ -41,10 +43,14 @@ def run(exits_only=False):
     for _, r in openr.iterrows():                                     # ---- exits at today's open
         if dt.date.fromisoformat(r.created_date) >= today: continue
         d = er.daily_frame(r.symbol, '3mo').dropna(); O = float(d.O.iloc[-1])
-        rv = float(r.thesis.split('RV30 ')[1].split('%')[0]) / 100; f = float(r.thesis.split('overnight share ')[1].split(' ')[0])
+        rv = float(r.thesis.split('RV30 ')[1].split('%')[0]) / 100; f = float(r.thesis.split('overnight share ')[1].split(' ')[0].rstrip('.,;|'))
         iv = rv * (SKEW if r.direction == 'put' else 1)
         p = bs(O, float(r.strike), (1 - f) / 252, iv, r.direction) * 100
-        print(f"*** LT EXIT {r.occ_code} | {r.symbol} open {O:.2f} | ~${p:.0f} vs entry ${r.entry_premium:.0f} ({p / r.entry_premium - 1:+.0%}) | sold at the 09:30 ET open")
+        if now.time() < dt.time(9, 45): print(f"   (warning: {now:%H:%M} ET - the ~15m-delayed chain still shows PRE-OPEN quotes; run exits at >= 09:46 ET)")
+        q = oq.fill(r.occ_code, 'sell', O, S_quote=O, rv=rv, T=(1 - f) / 252)
+        src = f"REAL BID ${q['prem']:.0f} [{q['note']}]" if q else f"NO QUOTE - model price (flag price_source=model)"
+        px = q['prem'] if q else p
+        print(f"*** LT EXIT {r.occ_code} | {r.symbol} open {O:.2f} | ${px:.0f} vs entry ${r.entry_premium:.0f} ({px / r.entry_premium - 1:+.0%}) | sold at the 09:30 ET open | model ${p:.0f} | {src}")
     if exits_only: print('   ' + bankroll.summary() + ' (before booking these exits)'); return
     fomc = today in er.FOMC_DATES
     exp_ok = lambda s: s in DAILY or nxt.weekday() == 4
@@ -76,11 +82,16 @@ def run(exits_only=False):
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30 (NVDA 202.90 vs 204.75)
         T = (mins / 390 + 1) / 252; sdv = rv * math.sqrt(1 / 252); st = inc(S)
         Kc = math.ceil(S * math.exp(sdv) / st) * st; Kp = math.floor(S * math.exp(-sdv) / st) * st
-        pc, pp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100
-        cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
-        if pc + pp > cap: print(f"   LT signal {tag}REJECTED: pair ${pc + pp:.0f} > ${cap:.0f} (November book: 10% of equity, within cash)"); continue
+        mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100
         occ = lambda k, K: f"{s}{nxt.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
-        print(f"*** LT ENTRY {tag}| CALL {occ('C', Kc)} ~${pc:.0f} + PUT {occ('P', Kp)} ~${pp:.0f} = ${pc + pp:.0f} | sell both at the {nxt} open | spot = live 1m print {S:.2f}, {age:.0f} min old")
+        Sq = oq.spot_at(s) or S   # the delayed quote was made against the spot ~15 min ago
+        qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T)
+        pc, pp = (qc['prem'] if qc else mc), (qp['prem'] if qp else mp)
+        src = lambda q, m: (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or 0:.3f}" if q else f"NO QUOTE - model ${m:.0f} (flag price_source=model)")
+        cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
+        if pc + pp > cap: print(f"   LT signal {tag}REJECTED: pair ${pc + pp:.0f} at the ask > ${cap:.0f} (November book: 10% of equity, within cash) | model pair ${mc + mp:.0f}"); continue
+        print(f"*** LT ENTRY {tag}| CALL {occ('C', Kc)} ${pc:.0f} + PUT {occ('P', Kp)} ${pp:.0f} = ${pc + pp:.0f} | sell both at the {nxt} open | spot = live 1m print {S:.2f}, {age:.0f} min old"
+              f"\n      call: {src(qc, mc)}\n      put:  {src(qp, mp)}")
         n += 1; spent += pc + pp
     if n == 0: print('   no 1-day tickets tonight')
     print('   ' + bankroll.summary())

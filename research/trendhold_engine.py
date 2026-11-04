@@ -17,6 +17,7 @@ warnings.filterwarnings('ignore')
 sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
+from analysis import option_quotes as oq   # 11-04: real fills - buy at the ASK, sell at the BID (Yahoo, ~15m delayed)
 from analysis.harvest import whipsaw_stats
 from analysis import bankroll   # November $1,000 cash book (user 11-01)
 STATE = '/home/user/options/research/trendhold_state.json'
@@ -52,6 +53,7 @@ def run():
         if dt.date.fromisoformat(r.created_date) >= today: continue
         bar = d.iloc[-1]; exp = dt.date.fromisoformat(r.expiry); K = float(r.strike); p0 = float(r.entry_premium) / 100
         rv = float(r.thesis.split('RV30 ')[1].split('%')[0]) / 100
+        if 'IVbid ' in str(r.thesis): rv = float(r.thesis.split('IVbid ')[1].split(' ')[0])   # 11-04: mark at the bid-side IV of the real entry quote
         T = T_at(now, exp); bd = int(np.busday_count(today, exp))
         worst = bs(float(bar.L), K, T, rv, 'call') / p0 - 1; best = bs(float(bar.H), K, T, rv, 'call') / p0 - 1
         close = bs(float(bar.C), K, T, rv, 'call') / p0 - 1
@@ -64,7 +66,9 @@ def run():
             if bd <= 2: out = (close, '2-DTE time stop')
         if out:
             r_, why = out
-            print(f"*** TH EXIT {r.occ_code} | {s} {float(bar.C):.2f} | ~${(1 + r_) * p0 * 100:.0f} vs entry ${r.entry_premium:.0f} ({r_:+.0%}) | {why}")
+            q = oq.fill(r.occ_code, 'sell', float(bar.C), oq.spot_at(s) or float(bar.C), rv=rv, T=T)
+            print(f"*** TH EXIT {r.occ_code} | {s} {float(bar.C):.2f} | ~${(1 + r_) * p0 * 100:.0f} vs entry ${r.entry_premium:.0f} ({r_:+.0%}) | {why} | "
+                  + (f"real bid now: [{q['note']}] (book the rule's level if the stop/trail fired intraday; the bid if it is the 2-DTE close)" if q else 'NO QUOTE - model price (flag price_source=model)'))
             st.pop(key, None)
         else:
             st[key] = {'peak': peak}
@@ -102,14 +106,17 @@ def run():
         if s not in EARN: why.append('no verified earnings date')
         elif today <= EARN[s] <= exp: why.append(f'earnings {EARN[s]} before expiry {exp}')
         if s in held or s in recent: why.append('already signalled in the last 5 sessions')
-        T = T_at(now, exp); K = math.ceil(S * math.exp(SIG * rv * math.sqrt(T)) / inc(S)) * inc(S); p = bs(S, K, T, rv, 'call') * 100
+        T = T_at(now, exp); K = math.ceil(S * math.exp(SIG * rv * math.sqrt(T)) / inc(S)) * inc(S); mp = bs(S, K, T, rv, 'call') * 100
+        q = oq.fill(f"{s}{exp.strftime('%y%m%d')}C{int(round(K * 1000)):08d}", 'buy', S, oq.spot_at(s) or S, rv=rv, T=T) if S > hi20 else None
+        p = q['prem'] if q else mp
+        qsrc = (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or rv:.3f}" if q else f"NO QUOTE - model ${mp:.0f} (flag price_source=model)")
         cap = min(BUDGET, bankroll.budget('trendhold', open_now=len(openr) + n))
         if p > cap: why.append(f'call ${p:.0f} > ${cap:.0f} (November book: 50% of equity, within cash, max 1 open)')
         tag = f"{s} {S:.2f} > 20d high {hi20:.2f} | vol {volx:.2f}x | 3d {ct3:+.1f}% | RSI {rsi:.0f} | RV30 {rv:.0%}"
         if why: print(f"   TH signal {tag} REJECTED: {'; '.join(why)}"); continue
         if n >= MAXN: print(f"   TH signal {tag} SKIPPED: max {MAXN} new per night"); continue
         occ = f"{s}{exp.strftime('%y%m%d')}C{int(round(K * 1000)):08d}"
-        print(f"*** TH ENTRY {s} CALL {occ} ~${p:.0f} ({SIG} sigma) | {tag} | exits -50% stop / trail 30% after +50% / 2 DTE ({exp})")
+        print(f"*** TH ENTRY {s} CALL {occ} ${p:.0f} ({SIG} sigma) | {tag} | exits -50% stop / trail 30% after +50% / 2 DTE ({exp})\n      {qsrc}")
         n += 1
     json.dump(st, open(STATE, 'w'), indent=1)
     if n == 0: print('   no trend-hold entry tonight')
