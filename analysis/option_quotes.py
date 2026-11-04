@@ -60,8 +60,10 @@ def chain_row(occ):
             except Exception as e:
                 err = e; time.sleep(2 * (attempt + 1))
         else:
+            _cache[key] = (time.time(), None)   # remember the failure: no 5x retry storm while Yahoo rate-limits (429)
             return None
         _cache[key] = hit = (time.time(), ch)
+    if hit[1] is None: return None
     df = hit[1].calls if kind == 'call' else hit[1].puts
     r = df[df.contractSymbol == occ]
     if not len(r): return None
