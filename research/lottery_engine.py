@@ -81,7 +81,7 @@ def run(exits_only=False):
         if n >= MAXN: print(f"   LT signal {tag}SKIPPED: max {MAXN}/night"); continue
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30 (NVDA 202.90 vs 204.75)
         T = (mins / 390 + 1) / 252; sdv = rv * math.sqrt(1 / 252); st = inc(S)
-        Kc = math.ceil(S * math.exp(sdv) / st) * st; Kp = math.floor(S * math.exp(-sdv) / st) * st
+        Kc = oq.snap(s, nxt, math.ceil(S * math.exp(sdv) / st) * st, 'up'); Kp = oq.snap(s, nxt, math.floor(S * math.exp(-sdv) / st) * st, 'down')   # listed strikes (11-05)
         mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100
         occ = lambda k, K: f"{s}{nxt.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         Sq = oq.spot_at(s) or S   # the delayed quote was made against the spot ~15 min ago

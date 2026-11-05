@@ -384,6 +384,11 @@ report was.
 - **Real IV / RV30 readings, 11-04** (first full day): 1-day AAPL tickets 1.63-1.9x; 2-week MSFT 1.33-1.36x,
   NVDA 1.34-1.39x, NVTS 1.22x, SMCI 1.11x, AAPL 1.01x, GOOGL 0.73x; same-day GOOGL 0.78x. The model was badly
   cheap on 1-day tickets, NOT uniformly cheap at 2 weeks.
+- **Strike-grid bug (found 11-05):** every engine built strikes from a fixed price-step table, but real listed
+  grids are coarser (NBIS 11-20: 125/130/135; NVDA ~$195: 2.5s; SMCI 1s). NVDA 194, NBIS 131/133, SMCI 27.5 do
+  not exist — NBIS261120P00133000 (11-04) was a contract that could never fill, and that, not the rate limit,
+  is why it had no quote. All engines now snap to LISTED strikes (`oq.snap`, nearest; OTM side for tickets).
+  A persistent "no quote" on one contract while others quote = suspect the strike, not Yahoo.
 
 ### 11-04 review (user: "what could you have done better") — `research/review_1104.py`, `research/sector_cap.py`
 Day: tech/banks rallied (AAPL +5.7%, MSFT, JPM, V up), chips broke down 10:45-11:00. Taken: NBIS put −5%

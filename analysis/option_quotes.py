@@ -79,6 +79,23 @@ def chain_age(root, exp):
     return time.time() - g[0] if g and time.time() - g[0] < STALE_S else None
 
 
+def snap(root, exp, K, side=None):
+    """Nearest LISTED strike for this expiry (11-05: the engines' price-step grid invented strikes - NVDA 194,
+    NBIS 131/133, SMCI 27.5 do not exist; NBIS261120P00133000 was booked 11-04 and could never have filled).
+    side='up' -> nearest listed strike >= K (OTM call), 'down' -> <= K (OTM put). Returns K unchanged if no chain."""
+    key = (root, exp); g = _good.get(key)
+    if not g or time.time() - g[0] > STALE_S:
+        if not fetch_chain(root, exp, tries=2): return K
+        g = _good[key]
+    st = sorted(set(g[1].calls.strike) | set(g[1].puts.strike))
+    if not st: return K
+    if side == 'up':
+        up = [x for x in st if x >= K - 1e-9]; return float(up[0]) if up else float(st[-1])
+    if side == 'down':
+        dn = [x for x in st if x <= K + 1e-9]; return float(dn[-1]) if dn else float(st[0])
+    return float(min(st, key=lambda x: abs(x - K)))
+
+
 def chain_row(occ, patient=False):
     """(bid, ask, last, volume, open interest, age_s) for one OCC contract from Yahoo, or None.
     Uses a fresh chain (< CACHE_S), else fetches; if the fetch fails, falls back to the last good chain < STALE_S old.

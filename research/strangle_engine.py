@@ -99,7 +99,7 @@ def run():
         if why: print(f"   SG signal {s} score {score:.2f} REJECTED: {'; '.join(why)}"); continue
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30
         exp = friday_after(today); T = T_at(now, exp); sdv = rv * math.sqrt(T); st = inc(S)
-        Kc = math.ceil(S * math.exp(SIG * sdv) / st) * st; Kp = math.floor(S * math.exp(-SIG * sdv) / st) * st
+        Kc = oq.snap(s, exp, math.ceil(S * math.exp(SIG * sdv) / st) * st, 'up'); Kp = oq.snap(s, exp, math.floor(S * math.exp(-SIG * sdv) / st) * st, 'down')   # listed strikes (11-05)
         mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv, 'put') * 100
         occ = lambda k, K: f"{s}{exp.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         Sq = oq.spot_at(s) or S

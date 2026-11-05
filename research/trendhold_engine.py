@@ -107,6 +107,7 @@ def run():
         elif today <= EARN[s] <= exp: why.append(f'earnings {EARN[s]} before expiry {exp}')
         if s in held or s in recent: why.append('already signalled in the last 5 sessions')
         T = T_at(now, exp); K = math.ceil(S * math.exp(SIG * rv * math.sqrt(T)) / inc(S)) * inc(S); mp = bs(S, K, T, rv, 'call') * 100
+        if not why: K = oq.snap(s, exp, K, 'up'); mp = bs(S, K, T, rv, 'call') * 100   # listed strikes only (11-05)
         q = oq.fill(f"{s}{exp.strftime('%y%m%d')}C{int(round(K * 1000)):08d}", 'buy', S, oq.spot_at(s) or S, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_)) if S > hi20 else None
         p = q['prem'] if q else mp
         qsrc = (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or rv:.3f}" if q else f"NO QUOTE - model ${mp:.0f} (flag price_source=model)")

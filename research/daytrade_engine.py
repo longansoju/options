@@ -66,7 +66,7 @@ def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None, sa=None):
     T = T_at(ts); sd = rv * math.sqrt(T); step = inc(S); sg = 1 if kind == 'call' else -1
     best = None
     for f in (0.0, 0.1, 0.2, 0.3, 0.4):
-        K = round(S * math.exp(sg * f * sd) / step) * step
+        K = oq.snap(sym, EXPIRY, round(S * math.exp(sg * f * sd) / step) * step)   # listed strikes only (11-05)
         sig = abs(math.log(K / S)) / sd
         if sig > 0.4: continue
         occ = f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
@@ -112,7 +112,7 @@ def z_pick(sym, S, kind, ts, rv, cap, Sq=None, sa=None):
     T = max(z_left(ts), 1e-6); sd = rv * math.sqrt(T); sg = 1 if kind == 'call' else -1
     step = 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 else 1.0
     for f in (1.0, 1.25, 1.5):
-        K = (math.ceil if sg == 1 else math.floor)(S * math.exp(sg * f * sd) / step) * step
+        K = oq.snap(sym, TODAY, (math.ceil if sg == 1 else math.floor)(S * math.exp(sg * f * sd) / step) * step, 'up' if sg == 1 else 'down')
         occ = f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
         f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
         if 1 <= prem <= cap:
