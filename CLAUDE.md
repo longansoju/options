@@ -1,9 +1,11 @@
 # Options decision system — working notes
 
 Phase 1 options paper-trading system that informs real bullish/bearish trades.
-Data is daily OHLCV via yfinance (HTTP fallback in `_price_history_direct`). No
-live options chain — premiums are Black-Scholes priced with realized vol as an IV
-proxy, so all dollar figures are **ballpark, not quotes**.
+Data is daily OHLCV via yfinance (HTTP fallback in `_price_history_direct`). **From
+2026-11-04 the live engines fill at REAL Yahoo option quotes** (ask in, bid out, ~15 min
+delayed; `analysis/option_quotes.py`, see "REAL FILLS" below). Backtests and any row
+flagged `price_source=model (no quote)` are still Black-Scholes at realized vol — those
+dollar figures are **ballpark, not quotes**.
 
 ## Scanners
 
@@ -70,9 +72,12 @@ real-money trading until the record proves the decisions out. Rules:
 - **Entry discipline applies** (see momentum lesson): confirmed trigger only, flag
   mean-reversion risk, size tiny, **0.3-0.6σ strike** (NOT 1σ — see the strike-
   distance lesson; >1σ is 0-for-10 in the book).
-- **Honest pricing caveat.** No live chain — paper fills are Black-Scholes at the
-  realized-vol proxy, with NO slippage or spread. A paper edge must be robust enough
-  to survive real friction; paper validates direction/timing, not exact premium.
+- **Honest pricing caveat.** Until 2026-11-03 every paper fill was Black-Scholes at the
+  realized-vol proxy with NO slippage or spread. From 11-04 the engines buy at the real
+  (delayed) ask and sell at the real bid; only no-quote rows are model-priced, and are
+  flagged. Rows that span the change (model entry, real exit) are tagged so — their %
+  P&L overstates real-world results. Intraday stops/targets are still checked on a model
+  path (at the entry quote's bid IV), so a fast resting-limit fill is plausible, not proven.
 - **Book separation.** `recommendations.book` = `real` (user's actual fills) |
   `paper` (Claude's trades) | `watch` (pending-trigger candidates).
 - **Exit rules — CHANGED 2026-10-15 (user: "adopt it, let's see how it works").**
@@ -186,6 +191,10 @@ real-money trading until the record proves the decisions out. Rules:
   1m closes) is reported as MISSED and not traded. The backtest enters AT
   confirmation; 10-05's late entries (VRT 28m, AMZN 51m after) were the worst
   trades. Start the engine before 09:30 ET (21:30 SGT) to avoid missing the morning.
+  **Extended 2026-11-04:** the engine only checked breaks it had NOT seen (late start).
+  A break it saw while both slots were full slipped through when a slot freed — SMCI put
+  entered 14 min after confirmation (−13%), then TSM 39 min after (voided before
+  booking). Now ANY break held > 20 closes is MISSED, whatever the reason.
 
   **Volume data-quality guard (2026-10-07):** NVDA printed 242M shares by 11:34 ET
   (6.2x same-clock) — 40-65M per 15 min from 10:15 — on a ~1% day range with no
@@ -223,9 +232,10 @@ real-money trading until the record proves the decisions out. Rules:
   Same pre-friction result, but a spread pays two bid-ask spreads and moves too
   slowly to reach ±20% inside a 120-minute hold (12-19% win). **MU stays out of the
   day-trade book under the $1,000 budget.** Raising the budget is the user's call,
-  not a rule change. Scheduled routine `trig_01UPqtkR5VGDTgz9Ebo6Y5aa` starts the
-  engine at 09:15 ET weekdays (CRON_TZ America/New_York, so it follows US DST:
-  21:15 SGT now, 22:15 SGT after US clocks change in November).
+  not a rule change. Scheduled routine `trig_01PSuTJLW2EMoWSkDA6tmQqz` (moved to the
+  11-04 session; the old `trig_01UPqtkR5VGDTgz9Ebo6Y5aa` is disabled, not deleted) starts
+  the engine at 09:15 ET weekdays (CRON_TZ America/New_York, so it follows US DST:
+  22:15 SGT since US clocks changed 11-01).
 
 ### 2026-10-08 losing day (−$195): the intuitive lessons were tested and FAILED
 Midday reversal (oil spike; SMH −3%): two calls bought into the turn (AVGO 12:26,
@@ -355,6 +365,44 @@ streak close and sold next close −0.4% / −1.5% / −2.5% (OOS −2.2/−3.5/
 (streak ≥3 below the 20d MA) was WORSE: gap −0.30%, call −7.1% (IS −5.5 / OOS −8.2), n=219. MU-only
 +3.0% is +11.8 IS / −12.6 OOS (n=69) — noise. The streak was not the signal; the scheduled peer
 report was.
+
+### REAL FILLS — from 2026-11-04 (user: "buy at the ASK, sell at the BID")
+`analysis/option_quotes.py`, used by all four engines (day trade incl. Z0, lottery, strangle, trend-hold).
+- Source: yfinance `option_chain()` (needs fc.yahoo.com). Quotes are **~15 min delayed**. Yahoo's own
+  `impliedVolatility` column is garbage (0.00001 on liquid puts) — IV is solved from bid/ask against the spot
+  at QUOTE time (1m close ~15 min earlier), then re-priced to the live spot: buy = BS(spot, IV_ask), sell =
+  BS(spot, IV_bid). A quote below intrinsic (stale vs spot) is floored at intrinsic − spread.
+- Entry caps are checked against the real ask. Day-trade / Z0 positions are then marked minute by minute at
+  the entry quote's BID IV (a 15-min-old bid cannot drive a 1-minute stop). Fixed-time exits (1-day ticket at
+  the open, strangle at the close) take the real bid; run 1-day exits at **≥ 09:46 ET** so the delayed chain
+  shows opening quotes.
+- **Yahoo rate-limits this container (HTTP 429) on and off** — on 11-04 about a third of fills fell back to
+  the model (NBIS day trade, the AAPL 1-day pair at the close). Fixes 11-05: failed fetches cached 60 s (no
+  retry storm); a cached chain up to 10 min old is used before the model (IV solved against the spot at that
+  older time); the day-trade engine pre-fetches the 2-week chain for the 2 names within 1% of their opening-
+  range level each minute; the 15:50 engines retry for ~60 s. No-quote rows: `price_source=model (no quote)`.
+- **Real IV / RV30 readings, 11-04** (first full day): 1-day AAPL tickets 1.63-1.9x; 2-week MSFT 1.33-1.36x,
+  NVDA 1.34-1.39x, NVTS 1.22x, SMCI 1.11x, AAPL 1.01x, GOOGL 0.73x; same-day GOOGL 0.78x. The model was badly
+  cheap on 1-day tickets, NOT uniformly cheap at 2 weeks.
+
+### 11-04 review (user: "what could you have done better") — `research/review_1104.py`, `research/sector_cap.py`
+Day: tech/banks rallied (AAPL +5.7%, MSFT, JPM, V up), chips broke down 10:45-11:00. Taken: NBIS put −5%
+(model, no quote), NVTS put −20% (stop on a $0.02 move — the 20% bid-ask spread did it), SMCI put −13% (late
+entry) = −$68; GOOGL same-day call +94% booked (+61% if the limit did not fill); AAPL 1-day pair +$472 real.
+All 24 signals replayed (v2 exits, 1m bars; "real" = 1.25x RV − 4%): taken 0/3, −13.2%; counter-trend-blocked
+calls +6.6% at RV but −2.8% real (n=6) — the gate again cost ~nothing; slot-full blocked (mostly chip puts)
+−6.7% — the 2-open cap saved money. Calls won, puts lost: ONE rotation day, not a rule.
+- **Tested and REJECTED: max 1 open day trade per sector group** (pre-specified groups: 17 chip/AI-hardware
+  names, 5 mega-caps, PLTR/JPM/XOM/V alone; 40 sessions 09-10 → 11-04, 102 gate-passing signals, slot-by-slot
+  replay, 4% spread): current max-2 −3.1% (IS −6.9 / OOS +1.3); sector cap −3.4% (IS −6.3 / OOS −0.0), worse in
+  P2 and P3. The 14 second-same-sector positions it would remove averaged +3.2%. "Three chip puts were one
+  bet" was a bad day, not a pattern. No change.
+- **Pending: spread filter** (e.g. skip if real spread > ~10% of mid, the NVTS case). Needs ~20 sessions of
+  logged quotes (every real fill now logs bid/ask) before it can be tested — do not adopt on one trade.
+- Process misses (fixed or noted): a META put rejection at 14:25 was never relayed (monitor re-arm failed while
+  the permission check was down — "nothing fired" was a gap, not silence); the stale-signal hole above; the
+  pre-market read said only an NVDA put could fire and missed the post-earnings names (NBIS, NVTS, SMCI) that
+  produced every entry.
 
 ### SAME-DAY TICKET SLOT — funded from 2026-11-03 (user: "be slightly more open to such trades" → chose "fund a tiny slot")
 Chosen knowingly over "track only": the screen above says ~−32% per ticket, so the expected cost is roughly

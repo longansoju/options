@@ -18,8 +18,10 @@ import pandas as pd
 
 warnings.filterwarnings('ignore')
 DELAY_MIN = 15          # Yahoo option quotes ~15 min behind
-CACHE_S = 60
-_cache: dict = {}
+CACHE_S = 60            # a chain younger than this is reused without a new request
+STALE_S = 600           # 11-05: if a fresh fetch fails (Yahoo 429), a chain up to 10 min old beats the model fallback
+_cache: dict = {}       # (root, expiry) -> (fetched_at, chain or None)
+_good: dict = {}        # (root, expiry) -> (fetched_at, chain) last SUCCESSFUL fetch
 
 
 def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -47,29 +49,54 @@ def parse_occ(occ):
     return root, d, ('call' if occ[-9] == 'C' else 'put'), int(occ[-8:]) / 1000
 
 
-def chain_row(occ):
-    """(bid, ask, last, volume, open interest) for one OCC contract from Yahoo, or None."""
+def fetch_chain(root, exp, tries=3, wait=2.0):
+    """Fetch one expiry's chain into the cache; returns the chain or None. Failures are remembered for CACHE_S
+    so a burst of lookups does not hammer a rate-limited Yahoo."""
     import yfinance as yf
+    key = (root, exp)
+    for attempt in range(tries):
+        try:
+            ch = yf.Ticker(root).option_chain(exp.isoformat())
+            _cache[key] = _good[key] = (time.time(), ch); return ch
+        except Exception:
+            if attempt < tries - 1: time.sleep(wait * (attempt + 1))
+    _cache[key] = (time.time(), None)
+    return None
+
+
+def prefetch(root, exp, min_age=240):
+    """Warm the cache for a likely signal (day-trade engine, 11-05). One request at most; skipped if a good chain
+    is younger than min_age seconds or a failure was cached in the last CACHE_S. Returns True if a chain is cached."""
+    key = (root, exp); g = _good.get(key); c = _cache.get(key)
+    if g and time.time() - g[0] < min_age: return True
+    if c and c[1] is None and time.time() - c[0] < CACHE_S: return bool(g and time.time() - g[0] < STALE_S)
+    return fetch_chain(root, exp, tries=1) is not None
+
+
+def chain_age(root, exp):
+    """Seconds since the chain used for this expiry was fetched (None if none usable)."""
+    g = _good.get((root, exp))
+    return time.time() - g[0] if g and time.time() - g[0] < STALE_S else None
+
+
+def chain_row(occ, patient=False):
+    """(bid, ask, last, volume, open interest, age_s) for one OCC contract from Yahoo, or None.
+    Uses a fresh chain (< CACHE_S), else fetches; if the fetch fails, falls back to the last good chain < STALE_S old.
+    patient=True (15:50 engines): retry for up to ~60 s before giving up."""
     root, exp, kind, K = parse_occ(occ)
     key = (root, exp)
     hit = _cache.get(key)
     if not hit or time.time() - hit[0] > CACHE_S:
-        for attempt in range(3):
-            try:
-                ch = yf.Ticker(root).option_chain(exp.isoformat()); break
-            except Exception as e:
-                err = e; time.sleep(2 * (attempt + 1))
-        else:
-            _cache[key] = (time.time(), None)   # remember the failure: no 5x retry storm while Yahoo rate-limits (429)
-            return None
-        _cache[key] = hit = (time.time(), ch)
-    if hit[1] is None: return None
+        fetch_chain(root, exp, tries=6 if patient else 3, wait=4.0 if patient else 2.0)
+    g = _good.get(key)
+    if not g or time.time() - g[0] > STALE_S: return None
+    hit = g
     df = hit[1].calls if kind == 'call' else hit[1].puts
     r = df[df.contractSymbol == occ]
     if not len(r): return None
     r = r.iloc[0]
     f = lambda c: float(r[c]) if pd.notna(r.get(c)) else 0.0
-    return dict(bid=f('bid'), ask=f('ask'), last=f('lastPrice'), vol=f('volume'), oi=f('openInterest'))
+    return dict(bid=f('bid'), ask=f('ask'), last=f('lastPrice'), vol=f('volume'), oi=f('openInterest'), age=time.time() - hit[0])
 
 
 def years_left(exp, now=None):
@@ -81,19 +108,25 @@ def years_left(exp, now=None):
     return max((mins / 390 + days) / 252, 1e-6)
 
 
-def fill(occ, side, S_now, S_quote=None, rv=None, T=None, now=None):
+def fill(occ, side, S_now, S_quote=None, rv=None, T=None, now=None, patient=False, spot_at_age=None):
     """Real-quote fill for ONE contract, $ per contract (x100). side = 'buy' (ask) or 'sell' (bid).
     S_now: live spot to re-price at; S_quote: spot when the (delayed) quote was made (default S_now).
+    spot_at_age(minutes) -> spot that many minutes ago; used when the chain is a cached one (fetch failed), so the IV is
+    solved against the spot when THAT quote was made (age + DELAY_MIN), not the spot 15 min ago.
     Returns dict(prem, raw, bid, ask, iv_ask, iv_bid, iv_rv, src, note) or None (no usable quote)."""
     try:
-        q = chain_row(occ)
+        q = chain_row(occ, patient=patient)
     except Exception:
         q = None
     if not q or q['bid'] <= 0 or q['ask'] <= 0 or q['ask'] < q['bid']: return None
     root, exp, kind, K = parse_occ(occ)
     T = T if T is not None else years_left(exp, now)
-    Tq = T + DELAY_MIN / 390 / 252
+    lag = DELAY_MIN + q['age'] / 60
+    Tq = T + lag / 390 / 252
     Sq = S_quote or S_now
+    if q['age'] > CACHE_S and spot_at_age is not None:
+        try: Sq = spot_at_age(lag) or Sq
+        except Exception: pass
     iv_a = implied_vol(q['ask'], Sq, K, Tq, kind); iv_b = implied_vol(q['bid'], Sq, K, Tq, kind)
     raw = q['ask'] if side == 'buy' else q['bid']
     iv = iv_a if side == 'buy' else iv_b
@@ -103,12 +136,13 @@ def fill(occ, side, S_now, S_quote=None, rv=None, T=None, now=None):
     else:
         prem = bs(S_now, K, T, iv, kind)
     ivr = (iv / rv) if (iv and rv) else None
-    note = (f"REAL QUOTE yahoo ~{DELAY_MIN}m delayed: bid {q['bid']:.2f} / ask {q['ask']:.2f} (spot then {Sq:.2f}) | "
+    note = (f"REAL QUOTE yahoo ~{lag:.0f}m old{' (cached chain - fresh fetch failed)' if q['age'] > CACHE_S else ''}: bid {q['bid']:.2f} / ask {q['ask']:.2f} (spot then {Sq:.2f}) | "
             f"IV ask {iv_a or 0:.2f} / bid {iv_b or 0:.2f}" + (f" = {ivr:.2f}x RV30 {rv:.0%}" if ivr else '') +
             f" | {side} @ {'ask' if side == 'buy' else 'bid'} re-priced to spot {S_now:.2f}: ${prem * 100:.0f}"
             f" | vol {q['vol']:.0f} OI {q['oi']:.0f}")
     return dict(prem=prem * 100, raw=raw * 100, bid=q['bid'], ask=q['ask'], iv_ask=iv_a, iv_bid=iv_b,
-                iv=iv, iv_rv=ivr, src='yahoo_chain', note=note)
+                iv=iv, iv_rv=ivr, src='yahoo_chain', note=note, age_min=lag,
+                spread=(q['ask'] - q['bid']) / ((q['ask'] + q['bid']) / 2))
 
 
 def spot_at(symbol, minutes_ago=DELAY_MIN):

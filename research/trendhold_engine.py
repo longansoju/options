@@ -66,7 +66,7 @@ def run():
             if bd <= 2: out = (close, '2-DTE time stop')
         if out:
             r_, why = out
-            q = oq.fill(r.occ_code, 'sell', float(bar.C), oq.spot_at(s) or float(bar.C), rv=rv, T=T)
+            q = oq.fill(r.occ_code, 'sell', float(bar.C), oq.spot_at(s) or float(bar.C), rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=r.symbol: oq.spot_at(s_, m_))
             print(f"*** TH EXIT {r.occ_code} | {s} {float(bar.C):.2f} | ~${(1 + r_) * p0 * 100:.0f} vs entry ${r.entry_premium:.0f} ({r_:+.0%}) | {why} | "
                   + (f"real bid now: [{q['note']}] (book the rule's level if the stop/trail fired intraday; the bid if it is the 2-DTE close)" if q else 'NO QUOTE - model price (flag price_source=model)'))
             st.pop(key, None)
@@ -107,7 +107,7 @@ def run():
         elif today <= EARN[s] <= exp: why.append(f'earnings {EARN[s]} before expiry {exp}')
         if s in held or s in recent: why.append('already signalled in the last 5 sessions')
         T = T_at(now, exp); K = math.ceil(S * math.exp(SIG * rv * math.sqrt(T)) / inc(S)) * inc(S); mp = bs(S, K, T, rv, 'call') * 100
-        q = oq.fill(f"{s}{exp.strftime('%y%m%d')}C{int(round(K * 1000)):08d}", 'buy', S, oq.spot_at(s) or S, rv=rv, T=T) if S > hi20 else None
+        q = oq.fill(f"{s}{exp.strftime('%y%m%d')}C{int(round(K * 1000)):08d}", 'buy', S, oq.spot_at(s) or S, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_)) if S > hi20 else None
         p = q['prem'] if q else mp
         qsrc = (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or rv:.3f}" if q else f"NO QUOTE - model ${mp:.0f} (flag price_source=model)")
         cap = min(BUDGET, bankroll.budget('trendhold', open_now=len(openr) + n))

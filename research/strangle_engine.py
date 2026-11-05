@@ -75,7 +75,7 @@ def run():
         if d0 >= today: continue
         rv = float(r.thesis.split('RV30 ')[1].split('%')[0]) / 100
         m = bs(px[s], float(r.strike), T_at(now, exp), rv, r.direction) * 100
-        q = oq.fill(r.occ_code, 'sell', px[s], oq.spot_at(s) or px[s], rv=rv, T=T_at(now, exp))
+        q = oq.fill(r.occ_code, 'sell', px[s], oq.spot_at(s) or px[s], rv=rv, T=T_at(now, exp), patient=True, spot_at_age=lambda m_, s_=r.symbol: oq.spot_at(s_, m_))
         p = q['prem'] if q else m
         print(f"SG EXIT {r.occ_code} | {s} {px[s]:.2f} | ${p:.0f} vs entry ${r.entry_premium:.0f} ({p / r.entry_premium - 1:+.0%}) | next-close exit | model ${m:.0f} | "
               + (f"REAL BID [{q['note']}]" if q else 'NO QUOTE - model price (flag price_source=model)'))
@@ -103,7 +103,7 @@ def run():
         mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv, 'put') * 100
         occ = lambda k, K: f"{s}{exp.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         Sq = oq.spot_at(s) or S
-        qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T)
+        qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_)), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_))
         pc, pp = (qc['prem'] if qc else mc), (qp['prem'] if qp else mp)
         if pc + pp > BUDGET: print(f"   SG signal {s} score {score:.2f} REJECTED: strangle ${pc + pp:.0f} at the ask > ${BUDGET:.0f} | model ${mc + mp:.0f}"); continue
         src = lambda q, m: (f"REAL ASK [{q['note']}]" if q else f"NO QUOTE - model ${m:.0f} (flag price_source=model)")

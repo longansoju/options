@@ -54,15 +54,15 @@ def bs(S, K, T, v, kind):
 def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 200 else 1.0 if S >= 50 else 0.5
 
 
-def quote_buy(occ, S, Sq, T, rv, model):
+def quote_buy(occ, S, Sq, T, rv, model, sa=None):
     """Real ask fill (re-priced to the live spot) or the model fallback. ivx = the IV the position is marked at
     afterwards (the BID-side IV, so every intraday mark is a realistic sell price)."""
-    q = oq.fill(occ, 'buy', S, Sq, rv=rv, T=T)
+    q = oq.fill(occ, 'buy', S, Sq, rv=rv, T=T, spot_at_age=sa)
     if not q: return dict(prem=model, ivx=rv, src='model', note=f'NO QUOTE - model ${model:.0f} (flag price_source=model)')
     return dict(prem=q['prem'], ivx=q['iv_bid'] or q['iv_ask'] or rv, src='yahoo_chain', note=f"REAL ASK [{q['note']}]")
 
 
-def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None):
+def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None, sa=None):
     T = T_at(ts); sd = rv * math.sqrt(T); step = inc(S); sg = 1 if kind == 'call' else -1
     best = None
     for f in (0.0, 0.1, 0.2, 0.3, 0.4):
@@ -70,7 +70,7 @@ def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None):
         sig = abs(math.log(K / S)) / sd
         if sig > 0.4: continue
         occ = f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
-        f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100); prem = f_['prem']
+        f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
         if prem <= budget:
             c = dict(K=K, prem=prem, sig=sig, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
             if best is None or abs(sig - 0.2) < abs(best['sig'] - 0.2): best = c
@@ -108,13 +108,13 @@ def gates(p, kind, sym):
 def z_left(ts): return max(16 * 60 - (ts.hour * 60 + ts.minute), 0) / 390 / 252
 
 
-def z_pick(sym, S, kind, ts, rv, cap, Sq=None):
+def z_pick(sym, S, kind, ts, rv, cap, Sq=None, sa=None):
     T = max(z_left(ts), 1e-6); sd = rv * math.sqrt(T); sg = 1 if kind == 'call' else -1
     step = 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 else 1.0
     for f in (1.0, 1.25, 1.5):
         K = (math.ceil if sg == 1 else math.floor)(S * math.exp(sg * f * sd) / step) * step
         occ = f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
-        f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100); prem = f_['prem']
+        f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
         if 1 <= prem <= cap:
             return dict(K=K, prem=prem, sig=abs(math.log(K / S)) / sd, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
     return None
@@ -175,6 +175,20 @@ while True:
             if zr:
                 ev.append(f"*** Z0 EXIT {z['occ']} — {zr[0]} at {zr[2].strftime('%H:%M')} | ~${zr[1]:.0f} vs entry ${z['prem']:.0f} ({(zr[1]/z['prem']-1)*100:+.0f}%) | {z['sym']} {float(since.loc[zr[2]].C):.2f}")
                 z['done'] = True
+        # ---- quote prefetch (11-05): warm the option-chain cache for the 2 names closest to breaking their opening range,
+        # so a confirmed break finds a real quote even while Yahoo rate-limits (11-04: NBIS + the AAPL ticket fell back to model)
+        if dt.time(10, 0) <= now.time() < dt.time(15, 0):
+            near = []
+            for s, x in live.items():
+                if s not in PRE or s in {p_['sym'] for p_ in st['pos'].values()}: continue
+                orb = x[x.index.time < dt.time(10, 0)]
+                if len(orb) < 20: continue
+                px_ = float(x.C.iloc[-1]); d_ = min(abs(px_ / float(orb.H.max()) - 1), abs(px_ / float(orb.L.min()) - 1))
+                near.append((d_, s))
+            for d_, s in sorted(near)[:2]:
+                if d_ < 0.01:
+                    try: oq.prefetch(s, EXPIRY)
+                    except Exception: pass
         # ---- entries
         n_today = len(st['done']) + len(st['pos'])
         held = {p['sym'] for p in st['pos'].values()} | {o[:len(o) - 15] for o in st['done']}
@@ -210,12 +224,13 @@ while True:
                             st['rej'].append(key + ':stale')
                         continue
                     Sq = float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)).any() else px
+                    sa = (lambda m, x=x, px=px: float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=m)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=m)).any() else px)
                     if s in ZDAILY and 'z' not in st and not (EARN.get(s) and TODAY <= EARN[s] <= NEXT_SESSION):
                         try:
                             book = pd.read_csv('/home/user/options/data/recommendations.csv')
                             booked = set(book[book.status == 'open'].occ_code)
                             unb = sum(q['prem'] for o, q in st['pos'].items() if o not in booked)
-                            zc = z_pick(s, px, kind, x.index[-1], p['rv'], bankroll.budget('zerodte', book, unbooked=unb, open_now=0), Sq)
+                            zc = z_pick(s, px, kind, x.index[-1], p['rv'], bankroll.budget('zerodte', book, unbooked=unb, open_now=0), Sq, sa)
                         except Exception:
                             zc = None
                         if zc:
@@ -225,7 +240,7 @@ while True:
                                       f"gates NOT applied (tiny slot) | exits +100% ${zc['prem']*2:.0f} / -50% ${zc['prem']*0.5:.0f} / 15:45\n      {zc['note']}")
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
-                    c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq) if not g else None
+                    c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq, sa) if not g else None
                     if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} (November book: 50% of equity, within cash, max 2 open)')
                     if g:
                         if key not in st['rej']:

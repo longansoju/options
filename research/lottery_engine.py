@@ -47,7 +47,7 @@ def run(exits_only=False):
         iv = rv * (SKEW if r.direction == 'put' else 1)
         p = bs(O, float(r.strike), (1 - f) / 252, iv, r.direction) * 100
         if now.time() < dt.time(9, 45): print(f"   (warning: {now:%H:%M} ET - the ~15m-delayed chain still shows PRE-OPEN quotes; run exits at >= 09:46 ET)")
-        q = oq.fill(r.occ_code, 'sell', O, S_quote=O, rv=rv, T=(1 - f) / 252)
+        q = oq.fill(r.occ_code, 'sell', O, S_quote=O, rv=rv, T=(1 - f) / 252, patient=True, spot_at_age=lambda m_, s_=r.symbol: oq.spot_at(s_, m_))
         src = f"REAL BID ${q['prem']:.0f} [{q['note']}]" if q else f"NO QUOTE - model price (flag price_source=model)"
         px = q['prem'] if q else p
         print(f"*** LT EXIT {r.occ_code} | {r.symbol} open {O:.2f} | ${px:.0f} vs entry ${r.entry_premium:.0f} ({px / r.entry_premium - 1:+.0%}) | sold at the 09:30 ET open | model ${p:.0f} | {src}")
@@ -85,7 +85,7 @@ def run(exits_only=False):
         mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100
         occ = lambda k, K: f"{s}{nxt.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         Sq = oq.spot_at(s) or S   # the delayed quote was made against the spot ~15 min ago
-        qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T)
+        qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_)), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_))
         pc, pp = (qc['prem'] if qc else mc), (qp['prem'] if qp else mp)
         src = lambda q, m: (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or 0:.3f}" if q else f"NO QUOTE - model ${m:.0f} (flag price_source=model)")
         cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
