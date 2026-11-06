@@ -206,22 +206,31 @@ while True:
                 vcap[late] = vcap[late].clip(upper=10 * max(float(vcap[late].median()), 1))   # (NVDA 10-07/10-09: 25-43M-share bars on flat price)
                 rv_ = float(vcap.sum()) / max(np.median(ref), 1) if ref else 0
                 for kind, beyond in (('call', post.C > hi), ('put', post.C < lo)):
-                    if not len(beyond) or not beyond.iloc[-1]: continue
-                    run = int(beyond[::-1].cumprod().sum())
-                    if run < 10 or not (px > vw if kind == 'call' else px < vw) or rv_ < 1.0: continue
                     key = f'{s}:{kind}'
+                    if not len(beyond) or not beyond.iloc[-1]:
+                        st.setdefault('seen', {}).pop(key, None); continue   # break failed -> a later re-break is a new signal
+                    run = int(beyond[::-1].cumprod().sum())
+                    if run < 10: st.setdefault('seen', {}).pop(key, None); continue
+                    if not (px > vw if kind == 'call' else px < vw) or rv_ < 1.0: continue
                     rng = (float(x.H.max()) / float(x.L.min()) - 1) * 100
                     if rv_ >= 4.0 and rng < 2.0:   # data-quality guard (10-07 NVDA: 6x volume on a 1% range, no news)
                         if key + ':volsus' not in st['rej']:
                             ev.append(f"DT signal {s} {kind} REJECTED: volume suspect ({rv_:.1f}x on a {rng:.1f}% day range, unexplained) | {px:.2f}")
                             st['rej'].append(key + ':volsus')
                         continue
-                    # stale-signal rule (CLAUDE.md 10-07): a break that has held > 20 consecutive 1m closes is MISSED, not
-                    # traded - whether the engine started late OR it saw the break while both slots were full (11-04: TSM
-                    # put fired 39 min after confirmation when the NBIS slot freed; SMCI 14 min late the same way)
-                    if run > 20:
+                    # stale-signal rule (CLAUDE.md 10-07, extended 11-04, corrected 11-06): a signal is MISSED when it was first
+                    # CONFIRMED (break held >= 10 closes AND VWAP side AND relvol >= 1.0) more than 10 min ago - e.g. it fired while
+                    # both slots were full (11-04 TSM 39 min, SMCI 14 min late). Age runs from full confirmation, not the first
+                    # break: 11-06 GOOGL was marked stale at 'held 29m' although volume/VWAP only confirmed later. Late start:
+                    # a break first seen already held > 20 closes, with the engine not watching then, is MISSED as before.
+                    seen = st.setdefault('seen', {})
+                    first_seen = key not in seen
+                    if first_seen: seen[key] = x.index[-1].isoformat()
+                    age = (x.index[-1] - pd.Timestamp(seen[key])).total_seconds() / 60
+                    watched = (now - pd.Timestamp(st['start'])).total_seconds() / 60
+                    if age > 10 or (first_seen and run > 20 and (run - 10) > watched + 2):
                         if key + ':stale' not in st['rej'] and key not in st['rej']:   # don't re-report a gate rejection as 'missed'
-                            ev.append(f"DT signal {s} {kind} MISSED: break confirmed ~{run - 10}m ago (stale, not chased - late start or slots were full) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
+                            ev.append(f"DT signal {s} {kind} MISSED: confirmed ~{max(age, run - 10):.0f}m ago (stale, not chased - late start or slots were full) | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
                             st['rej'].append(key + ':stale')
                         continue
                     Sq = float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)).any() else px

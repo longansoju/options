@@ -195,6 +195,11 @@ real-money trading until the record proves the decisions out. Rules:
   A break it saw while both slots were full slipped through when a slot freed — SMCI put
   entered 14 min after confirmation (−13%), then TSM 39 min after (voided before
   booking). Now ANY break held > 20 closes is MISSED, whatever the reason.
+  **Corrected 2026-11-06:** "held > 20 closes" over-blocked — GOOGL was marked stale at "held 29m" although its
+  volume/VWAP conditions only confirmed later, the moment the backtest would enter. Age now runs from the first minute
+  ALL conditions held (break ≥ 10 closes + VWAP side + relvol ≥ 1.0); MISSED if that was > 10 min ago (slots full),
+  or, for a break first seen already > 20 closes old while the engine was not watching, as before. A failed break
+  (price back inside the range) resets it, so a later re-break is a fresh signal.
 
   **Volume data-quality guard (2026-10-07):** NVDA printed 242M shares by 11:34 ET
   (6.2x same-clock) — 40-65M per 15 min from 10:15 — on a ~1% day range with no
