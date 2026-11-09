@@ -128,7 +128,7 @@ DAYTRADE_EARNINGS: dict[str, str] = {
     "NVTS": "2026-11-03",   # company release 10-13: Q3 after the close 11-03
     "MPWR": "2026-10-29",   # company release: Q3 after the close 10-29 (reported)
     "DELL": "2026-11-25",   # AJ Bell calendar estimate (not yet announced by Dell) - re-verify
-    "MRVL": "2026-11-25",   # ESTIMATE (11-02): TipRanks lists 11-26 after close, but 11-26 is Thanksgiving (market closed) - take the session before; re-verify when MRVL announces
+    "MRVL": "2026-12-01",   # VERIFIED 11-09: company PR (11-06) - FQ3 FY27 results Tue 12-01 after the close, call 1:30 PT (the 11-25 estimate was wrong)
     # CRDO: no announced or calendar date found 10-30 (last year early Dec) - left blocked
     # batch 1
     "GOOGL": "2026-10-28", "JPM": "2026-10-13", "V": "2026-10-27",
