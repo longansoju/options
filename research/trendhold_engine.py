@@ -100,7 +100,7 @@ def run():
         if (exp - today).days < 3: exp += dt.timedelta(days=7)
         if not smh_up: why.append('SMH below 50d MA')
         if volx < 1.5: why.append(f'volume {volx:.2f}x < 1.5x')
-        if w['chop']: why.append(f"whipsaw {w['up5']}/{w['dn5']}")
+        if w['chop']: why.append(f"whipsaw {w['up5']}/{w.get('down5', w.get('dn5'))}")
         if ct3 < 0: why.append(f'counter-trend 3d {ct3:+.1f}%')
         if rsi > 70: why.append(f'RSI {rsi:.0f}')
         if s not in EARN: why.append('no verified earnings date')
