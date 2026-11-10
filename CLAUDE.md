@@ -414,6 +414,16 @@ calls +6.6% at RV but −2.8% real (n=6) — the gate again cost ~nothing; slot-
   pre-market read said only an NVDA put could fire and missed the post-earnings names (NBIS, NVTS, SMCI) that
   produced every entry.
 
+### 11-09 review (user: "review last night's trades") — `research/review_1109.py`
+Day 3 after the 11-05 crash: a broad chip relief bounce (SMH ~+3.5%, COHR/CRDO/VRT/MRVL/AVGO +7-11%) while mega-caps
+faded; NVDA −4.7% on the Huang probe. Taken: 0 day trades; MU same-day call −$15 (MU flat — a 36% spread plus same-day
+theta); NVDA watch strangle −9% over the weekend. All 17 signals replayed (v2 exits, 1m bars, "real" = 1.25x RV − 4%):
+**counter-trend-blocked bounce calls n=15: +4.6% at RV, −1.6% real** — the gate cost ~nothing once friction is in, as
+in every earlier review. The +20% winners (COHR, MPWR, AVGO) were also over the ~$1,000 cap ($1.0-5.4k); the in-budget
+blocked signals averaged ~−4% real. No change. Process: Yahoo printed NVDA volume as 3.5B shares (feed error — the 8.5x
+relvol on the NVDA signal was not real); trend-hold crashed on a whipsaw_stats key (`down5`, fixed); MRVL's earnings
+date was an estimate (fixed to the verified 12-01).
+
 ### SAME-DAY TICKET SLOT — funded from 2026-11-03 (user: "be slightly more open to such trades" → chose "fund a tiny slot")
 Chosen knowingly over "track only": the screen above says ~−32% per ticket, so the expected cost is roughly
 $7/day (~$140/month) of the November book. Rules (`research/daytrade_engine.py`, `ZDAILY`, `z_pick`): the FIRST
