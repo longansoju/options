@@ -205,6 +205,8 @@ while True:
                 vcap = x.V.copy(); late = vcap.index.time >= dt.time(9, 35)   # keep the real opening auction; cap post-open feed bursts
                 vcap[late] = vcap[late].clip(upper=10 * max(float(vcap[late].median()), 1))   # (NVDA 10-07/10-09: 25-43M-share bars on flat price)
                 rv_ = float(vcap.sum()) / max(np.median(ref), 1) if ref else 0
+                raw_rv = float(x.V.sum()) / max(np.median(ref), 1) if ref else 0   # 11-10: uncapped, for the data-sanity flag
+                vflag = f" | VOLUME DATA SUSPECT: raw volume {raw_rv:.0f}x same-clock (feed error? 11-09 NVDA printed 3.5B shares)" if raw_rv >= 15 else ''
                 for kind, beyond in (('call', post.C > hi), ('put', post.C < lo)):
                     key = f'{s}:{kind}'
                     if not len(beyond) or not beyond.iloc[-1]:
@@ -247,14 +249,14 @@ while True:
                             st['z'] = dict(sym=s, kind=kind, K=zc['K'], prem=zc['prem'], rv=p['rv'], ivx=zc['ivx'], src=zc['src'], ts=x.index[-1].isoformat(), px=px, occ=zc['occ'])
                             ev.append(f"*** Z0 ENTRY {s} {kind.upper()} {zc['occ']} ~${zc['prem']:.0f} (same-day, {zc['sig']:.2f} remaining-session sigma, RV {p['rv']:.0%}) | "
                                       f"{s} {px:.2f} broke OR {'high' if kind == 'call' else 'low'} {hi if kind == 'call' else lo:.2f}, held {run}m, relvol {rv_:.2f}x | "
-                                      f"gates NOT applied (tiny slot) | exits +100% ${zc['prem']*2:.0f} / -50% ${zc['prem']*0.5:.0f} / 15:45\n      {zc['note']}")
+                                      f"gates NOT applied (tiny slot) | exits +100% ${zc['prem']*2:.0f} / -50% ${zc['prem']*0.5:.0f} / 15:45{vflag}\n      {zc['note']}")
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
                     c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq, sa) if not g else None
                     if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} (November book: 50% of equity, within cash, max 2 open)')
                     if g:
                         if key not in st['rej']:
-                            ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x")
+                            ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x{vflag}")
                             st['rej'].append(key)
                         continue
                     if len(st['done']) + len(st['pos']) >= MAXN: break
@@ -262,7 +264,7 @@ while True:
                     ev.append(f"*** DT ENTRY {s} {kind.upper()} {c['occ']} ~${c['prem']:.0f} ({c['sig']:.2f} sigma, RV {p['rv']:.0%}) | {s} {px:.2f} "
                               f"broke OR {'high' if kind == 'call' else 'low'} {hi if kind == 'call' else lo:.2f}, held {run}m, VWAP {vw:.2f}, relvol {rv_:.2f}x | "
                               f"gates PASS (whipsaw {p['up5']}/{p['dn5']}, 3d {p['ct3']:+.1f}%, RSI {p['rsi']:.0f}) | "
-                              f"exits +{TGT:.0%} ${c['prem']*(1+TGT):.0f} / -{STOP:.0%} ${c['prem']*(1-STOP):.0f} / max hold {MAXHOLD}m / 15:45\n      {c['note']}")
+                              f"exits +{TGT:.0%} ${c['prem']*(1+TGT):.0f} / -{STOP:.0%} ${c['prem']*(1-STOP):.0f} / max hold {MAXHOLD}m / 15:45{vflag}\n      {c['note']}")
                     break
         # ---- marks + heartbeat
         marks = []

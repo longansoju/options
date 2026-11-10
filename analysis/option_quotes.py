@@ -125,6 +125,26 @@ def years_left(exp, now=None):
     return max((mins / 390 + days) / 252, 1e-6)
 
 
+QUOTE_LOG = '/home/user/options/data/quote_log.csv'   # 11-10: structured log of every real quote used (spread-filter test data)
+
+
+def _log_quote(occ, side, q, Sq, S_now, iv_a, iv_b, rv, lag):
+    """Append one row per real quote the engines price a fill from. Never raises."""
+    try:
+        import os, csv
+        new = not os.path.exists(QUOTE_LOG)
+        mid = (q['ask'] + q['bid']) / 2
+        with open(QUOTE_LOG, 'a', newline='') as fh:
+            w = csv.writer(fh)
+            if new: w.writerow(['logged_utc', 'occ', 'side', 'bid', 'ask', 'spread_pct_mid', 'iv_ask', 'iv_bid', 'rv30',
+                                'spot_at_quote', 'spot_now', 'quote_age_min', 'volume', 'open_interest'])
+            w.writerow([pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%dT%H:%M:%SZ'), occ, side, q['bid'], q['ask'],
+                        round((q['ask'] - q['bid']) / mid, 4) if mid else '', round(iv_a or 0, 4), round(iv_b or 0, 4),
+                        round(rv or 0, 4), round(Sq, 4), round(S_now, 4), round(lag, 1), q['vol'], q['oi']])
+    except Exception:
+        pass
+
+
 def fill(occ, side, S_now, S_quote=None, rv=None, T=None, now=None, patient=False, spot_at_age=None):
     """Real-quote fill for ONE contract, $ per contract (x100). side = 'buy' (ask) or 'sell' (bid).
     S_now: live spot to re-price at; S_quote: spot when the (delayed) quote was made (default S_now).
@@ -157,6 +177,7 @@ def fill(occ, side, S_now, S_quote=None, rv=None, T=None, now=None, patient=Fals
             f"IV ask {iv_a or 0:.2f} / bid {iv_b or 0:.2f}" + (f" = {ivr:.2f}x RV30 {rv:.0%}" if ivr else '') +
             f" | {side} @ {'ask' if side == 'buy' else 'bid'} re-priced to spot {S_now:.2f}: ${prem * 100:.0f}"
             f" | vol {q['vol']:.0f} OI {q['oi']:.0f}")
+    _log_quote(occ, side, q, Sq, S_now, iv_a, iv_b, rv, lag)
     return dict(prem=prem * 100, raw=raw * 100, bid=q['bid'], ask=q['ask'], iv_ask=iv_a, iv_bid=iv_b,
                 iv=iv, iv_rv=ivr, src='yahoo_chain', note=note, age_min=lag,
                 spread=(q['ask'] - q['bid']) / ((q['ask'] + q['bid']) / 2))
