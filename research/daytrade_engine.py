@@ -59,7 +59,11 @@ def quote_buy(occ, S, Sq, T, rv, model, sa=None):
     afterwards (the BID-side IV, so every intraday mark is a realistic sell price)."""
     q = oq.fill(occ, 'buy', S, Sq, rv=rv, T=T, spot_at_age=sa)
     if not q: return dict(prem=model, ivx=rv, src='model', note=f'NO QUOTE - model ${model:.0f} (flag price_source=model)')
-    return dict(prem=q['prem'], ivx=q['iv_bid'] or q['iv_ask'] or rv, src='yahoo_chain', note=f"REAL ASK [{q['note']}]")
+    return dict(prem=q['prem'], ivx=q['iv_bid'] or q['iv_ask'] or rv, src='yahoo_chain', note=f"REAL ASK [{q['note']}]", spread=q.get('spread', 0))
+
+
+MAX_SPREAD = 0.25   # 11-11 data-quality guard: a quote whose spread is > 25% of mid is not a tradeable market (COHR 11-11: 3.80/7.50 = 65%, vol 6 ->
+                    # -45% at entry, -$374). Skip that strike. A tighter cap (15%) is pending the user's decision and the quote-log test.
 
 
 def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None, sa=None):
@@ -71,6 +75,7 @@ def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None, sa=None):
         if sig > 0.4: continue
         occ = f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
         f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
+        if f_.get('spread', 0) > MAX_SPREAD: continue
         if prem <= budget:
             c = dict(K=K, prem=prem, sig=sig, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
             if best is None or abs(sig - 0.2) < abs(best['sig'] - 0.2): best = c
@@ -116,6 +121,7 @@ def z_pick(sym, S, kind, ts, rv, cap, Sq=None, sa=None):
         if abs(math.log(K / S)) / sd > 1.6: continue   # 11-05: the listed-strike snap pushed META to 1.85 sigma - keep the slot at ~1.0-1.5
         occ = f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
         f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
+        if f_.get('spread', 0) > MAX_SPREAD: continue
         if 1 <= prem <= cap:
             return dict(K=K, prem=prem, sig=abs(math.log(K / S)) / sd, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
     return None
@@ -253,7 +259,7 @@ while True:
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
                     c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq, sa) if not g else None
-                    if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} (November book: 50% of equity, within cash, max 2 open)')
+                    if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} with a spread <= {MAX_SPREAD:.0%} (November book: 50% of equity, within cash, max 2 open)')
                     if g:
                         if key not in st['rej']:
                             ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x{vflag}")

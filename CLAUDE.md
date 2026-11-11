@@ -409,6 +409,12 @@ calls +6.6% at RV but −2.8% real (n=6) — the gate again cost ~nothing; slot-
   bet" was a bad day, not a pattern. No change.
 - **Pending: spread filter** (e.g. skip if real spread > ~10% of mid, the NVTS case). Needs ~20 sessions of
   logged quotes (every real fill now logs bid/ask) before it can be tested — do not adopt on one trade.
+  **11-11: a 25% DATA-QUALITY guard added** (`MAX_SPREAD` in daytrade_engine.py, DT + Z0): COHR261127C00270000 was
+  bought at 3.80/7.50 (65% spread, vol 6, OI 75) — −45% at entry, stopped 1 min later with COHR UP, −$374 booked at
+  the real bid. A > 25% spread is not a market, same class as the 10-07 volume-suspect guard. Wide-spread record so far:
+  NVTS 20% −20% (11-04), MU Z0 36% −50% (11-09), MSFT 19% −20% in 1 min (11-10), MU Z0 35% +100% (11-11), COHR 65%
+  −44% (11-11). A tighter 15% cap is the USER's decision (proposed 11-10); test the threshold on `data/quote_log.csv`.
+  Exits on wide-spread fills are booked at the REAL bid, not the −20% rule level, so the book does not hide the spread.
 - Process misses (fixed or noted): a META put rejection at 14:25 was never relayed (monitor re-arm failed while
   the permission check was down — "nothing fired" was a gap, not silence); the stale-signal hole above; the
   pre-market read said only an NVDA put could fire and missed the post-earnings names (NBIS, NVTS, SMCI) that
