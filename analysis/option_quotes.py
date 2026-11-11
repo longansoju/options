@@ -125,7 +125,9 @@ def years_left(exp, now=None):
     return max((mins / 390 + days) / 252, 1e-6)
 
 
-QUOTE_LOG = '/home/user/options/data/quote_log.csv'   # 11-10: structured log of every real quote used (spread-filter test data)
+import os as _os
+QUOTE_LOG = _os.environ.get('OPT_QUOTE_LOG', '/home/user/options/data/quote_log.csv')   # 11-10: structured log of every real quote used
+# (spread-filter test data). 11-11: the intraday engine sets OPT_QUOTE_LOG to a scratchpad file; its rows are appended to the repo log at the 15:50 booking.
 
 
 def _log_quote(occ, side, q, Sq, S_now, iv_a, iv_b, rv, lag):
