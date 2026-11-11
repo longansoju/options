@@ -430,6 +430,22 @@ blocked signals averaged ~−4% real. No change. Process: Yahoo printed NVDA vol
 relvol on the NVDA signal was not real); trend-hold crashed on a whipsaw_stats key (`down5`, fixed); MRVL's earnings
 date was an estimate (fixed to the verified 12-01).
 
+### MU 261111 800C "$1.01 → $23.20" (user screenshot 11-11: "research harder so you can get signs for these bounces")
+MU gapped +7.2% (725 → 777), dipped to 763.05 at 09:36 (the 800C's $1.01 low), then ran to 822 by 11:00 (+13%). The
+engine DID see it: MU broke its OR high at 10:11 with gates PASSING (3d +10%); the 2-week call was over the $884 cap;
+the Z0 slot bought `MU261111C00845000` at $33 and sold the +100% cap at 10:28 ($65) — the option was ~$200+ by 11:00.
+Real IV from the screenshot: $22.37 at MU 820.5 → **IV 0.47 = 0.6x RV30** (deep ITM, 5h left).
+Two pre-specified tests (`research/bounce_signs.py`, `research/z0_exit_test.py`):
+- **Signs at the open (5y daily, 28 names, 32,666 name-days):** names in a ≥ 20% drawdown are twice as volatile
+  intraday (≥ +3% open→close 23% of days, ≤ −3% 21%) but directionless (51% up). **A gap UP in a drawdown name FADES on
+  average:** gap ≥ +2%: o→c −0.19% (45% up, IS −0.26 / OOS −0.16); gap ≥ +4%: −0.83% (39% up, −0.56 / −0.86); with SMH
+  also gapping up −0.36%; after an up day −0.70%. A 0.2σ 2-week call bought at the open lost −7% to −13% in every
+  gap-up cut. MU today was the 23%-of-days right tail of a setup that loses on average — not a detectable sign.
+- **Letting the Z0 winner run:** 40 first-of-day signals (40 sessions): +100% cap −22.5% (OOS +0.0%); trail 30% −23.5%
+  (OOS −4.8%); trail 50% −23.9%; half-off −35.0%; no target −36.0% (best +901%, 2% win). The cap is the best exit
+  tested; today's give-up is the cost of a rule that is right on average. No change.
+What remains untested and plausible: option-flow / IV-skew signals (need the moomoo chain), which price/volume lacks.
+
 ### SAME-DAY TICKET SLOT — funded from 2026-11-03 (user: "be slightly more open to such trades" → chose "fund a tiny slot")
 Chosen knowingly over "track only": the screen above says ~−32% per ticket, so the expected cost is roughly
 $7/day (~$140/month) of the November book. Rules (`research/daytrade_engine.py`, `ZDAILY`, `z_pick`): the FIRST
