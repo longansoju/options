@@ -122,7 +122,7 @@ DAYTRADE_EARNINGS: dict[str, str] = {
     "WDC": "2026-10-22",    # company IR, confirmed 10-12
     "STX": "2026-10-27",    # estimate 10-27/10-28: take the earlier (10-12)
     "MU": "2026-12-16",     # MarketBeat/Quartr/Public 12-16 (TipRanks est. 12-23), verified 10-15
-    "NBIS": "2026-11-11",   # estimate (AJ Bell calendar; Q3 2025 was 11-11 BMO). 10-22 was wrong - that was last year's date-ANNOUNCEMENT day (re-checked 10-29)
+    "NBIS": "2026-11-12",   # VERIFIED 11-12: Q3 reported 11-12 BMO (Bloomberg/Quartz); the 11-11 estimate was a day early
     # verified 10-30 (were missing - "no verified date" was blocking every MRVL/COHR/MPWR/NVTS signal)
     "COHR": "2026-11-04",   # company release 10-14: FY27 Q1 after the close 11-04
     "NVTS": "2026-11-03",   # company release 10-13: Q3 after the close 11-03
