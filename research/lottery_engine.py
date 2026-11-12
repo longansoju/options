@@ -53,7 +53,7 @@ def run(exits_only=False):
         print(f"*** LT EXIT {r.occ_code} | {r.symbol} open {O:.2f} | ${px:.0f} vs entry ${r.entry_premium:.0f} ({px / r.entry_premium - 1:+.0%}) | sold at the 09:30 ET open | model ${p:.0f} | {src}")
     if exits_only: print('   ' + bankroll.summary() + ' (before booking these exits)'); return
     fomc = today in er.FOMC_DATES
-    exp_ok = lambda s: s in DAILY or nxt.weekday() == 4
+    exp_ok = lambda s: (s in DAILY and nxt.weekday() in (0, 2, 4)) or nxt.weekday() == 4   # 11-12: these names list Mon/Wed/Fri expiries only (Yahoo), not daily
     cands = []
     mins = max(16 * 60 - (now.hour * 60 + now.minute), 0)
     for s in SYMS:
