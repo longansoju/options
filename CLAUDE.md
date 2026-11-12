@@ -395,6 +395,14 @@ report was.
   is why it had no quote. All engines now snap to LISTED strikes (`oq.snap`, nearest; OTM side for tickets).
   A persistent "no quote" on one contract while others quote = suspect the strike, not Yahoo.
 
+- **Expiry-calendar bug (found 11-12):** the same-day and 1-day ticket engines assumed DAILY expiries for NVDA/AAPL/MSFT/
+  AMZN/META/GOOGL/MU. Yahoo lists **Mon/Wed/Fri only** (11-13, 11-16, 11-18, 11-20). On Thu 11-12 the Z0 slot fired
+  `NVDA261112C00170000` - a contract that does not exist ("NO QUOTE", model $19); VOIDED before booking. Both engines now
+  require a Mon/Wed/Fri expiry (`ZDAYS` in daytrade_engine.py, `exp_ok` in lottery_engine.py). Same night the NVDA 1-day
+  pair (172.5C/160P 11-13) had no quote at the engine's fetch (Yahoo 429), model $71; a re-fetch gave real asks
+  $60 + $147 = **$207 (2.9x the model)**, over the ~$123 cap -> NOT booked. Rule: a no-quote LT/Z0 entry is re-fetched
+  before booking; if the real ask is over the cap, or the contract is not listed, it is void.
+
 ### 11-04 review (user: "what could you have done better") — `research/review_1104.py`, `research/sector_cap.py`
 Day: tech/banks rallied (AAPL +5.7%, MSFT, JPM, V up), chips broke down 10:45-11:00. Taken: NBIS put −5%
 (model, no quote), NVTS put −20% (stop on a $0.02 move — the 20% bid-ask spread did it), SMCI put −13% (late
