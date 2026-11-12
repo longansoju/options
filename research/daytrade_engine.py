@@ -36,6 +36,7 @@ ST = f'dt_state_{TODAY}.json'
 # sigma OTM, <= 2% of November equity, one a day, gates NOT applied (the MU 840P case was whipsaw-blocked),
 # earnings day/day before still blocked. Exits +100% / -50% / 15:45. research/zerodte_bt.py: ~-32%/ticket.
 ZDAILY = {'NVDA', 'AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL', 'MU'}   # daily expiries assumed - confirm on moomoo
+ZDAYS = (0, 2, 4)   # 11-12: Yahoo lists Mon/Wed/Fri expiries only for these names (11-13, 11-16, 11-18, 11-20) - NVDA261112C00170000 (a Thursday) was a contract that does not exist; voided before booking
 
 
 def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -243,7 +244,7 @@ while True:
                         continue
                     Sq = float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=oq.DELAY_MIN)).any() else px
                     sa = (lambda m, x=x, px=px: float(x.C[x.index <= x.index[-1] - pd.Timedelta(minutes=m)].iloc[-1]) if (x.index <= x.index[-1] - pd.Timedelta(minutes=m)).any() else px)
-                    if s in ZDAILY and 'z' not in st and not (EARN.get(s) and TODAY <= EARN[s] <= NEXT_SESSION):
+                    if s in ZDAILY and TODAY.weekday() in ZDAYS and 'z' not in st and not (EARN.get(s) and TODAY <= EARN[s] <= NEXT_SESSION):
                         try:
                             book = pd.read_csv('/home/user/options/data/recommendations.csv')
                             booked = set(book[book.status == 'open'].occ_code)
