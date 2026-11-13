@@ -454,6 +454,27 @@ Two pre-specified tests (`research/bounce_signs.py`, `research/z0_exit_test.py`)
   tested; today's give-up is the cost of a rule that is right on average. No change.
 What remains untested and plausible: option-flow / IV-skew signals (need the moomoo chain), which price/volume lacks.
 
+### MU 261113 750P "$0.54 -> $5.90" (user screenshot 11-13: "there has to be something we can study ... stocks that have high prices")
+MU opened 782.66 (-2%), spiked to 796 in the first 5 minutes (the put's $0.54 low), then fell to 759 by 10:21 on a chip-wide breakdown (nine
+names broke their OR lows by 10:35; AMD -6.6%, DELL -6.3%). The engine saw MU: put signal 10:17 (765.79 < OR low 771.71),
+REJECTED counter-trend (3d +8.9%); the Z0 slot had already gone to GOOGL (first break, 10:09, +100% in 5 min). Two
+PRE-SPECIFIED cuts of the same-day-option screen (`research/z0_breadth.py`, 572 ORB signals, 40 sessions 09-10 -> 11-04,
+1.0 remaining-session sigma, +100/-50/15:45, 10% friction):
+| cut | n | IV=RV avg (IS / OOS) | IV=1.3x avg (IS / OOS) |
+|---|---|---|---|
+| all signals | 572 | -25.6% (-40.4 / -13.4) | -40.9% (-49.0 / -34.0) |
+| A breadth >= 3 other names same direction | 327 | -29.3% (-46.5 / -17.5) | -43.5% |
+| breadth 0-2 | 245 | -20.8% (-34.0 / -6.6) | -37.3% |
+| A, puts only | 172 | -17.3% (-43.0 / -5.8) | -38.2% |
+| B stock >= $300 | 320 | -25.8% (-38.7 / -13.6) | -39.8% |
+| stock < $300 | 252 | -25.5% (-42.9 / -13.1) | -42.1% |
+**Both fail.** Breadth makes it WORSE (a break confirmed after three others is late); stock price makes no difference
+(-25.8% vs -25.5%) - a $750 stock's option moves more DOLLARS, the same PERCENT. Listed-expiry subset: same picture
+(-32.5% / -44.3%). Price/volume cuts of this screen are now exhausted (gates, sigma, exits, gap, drawdown, breadth,
+price); the remaining untested inputs are option-side (IV skew, option volume) - `data/quote_log.csv` is the start.
+Real IV from the screenshot: $5.90 at MU 759.21, 5.6h left -> **IV 0.56 = 0.62x RV30 (90%)** - same-day IV far BELOW
+RV30 on a name whose RV30 is inflated by the last two weeks (as on 11-11: 0.6x).
+
 ### SAME-DAY TICKET SLOT — funded from 2026-11-03 (user: "be slightly more open to such trades" → chose "fund a tiny slot")
 Chosen knowingly over "track only": the screen above says ~−32% per ticket, so the expected cost is roughly
 $7/day (~$140/month) of the November book. Rules (`research/daytrade_engine.py`, `ZDAILY`, `z_pick`): the FIRST
