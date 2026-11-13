@@ -430,8 +430,8 @@ MRVL 5%, DELL 5%, SMCI/GOOGL/TSM 8-9%, VRT 9%, NVTS 10%, MU 13%, STX 15%, MSFT 1
 in P2 at 4% and 8%; fails the every-period rule.
 **Not changed, and why:** the gates (every review, incl. this week's ~25 rejected signals, says they cost ~nothing); exits
 (9 variants failed 11-01); the 2-open cap. **Still true:** even at a 4% spread the rule averages -3%; a spread cap removes the
-avoidable part of the loss, it does not create an edge. Position size (50% of equity per day trade) is the USER's call -
-proposed 11-13: 25%, so a -20% stop costs 5% of equity instead of 10%.
+avoidable part of the loss, it does not create an edge. **Position size: day trade <= 25% of equity from 11-13** (user: "apply it, let's see how we perform next week"; was 50%) -
+a -20% stop costs 5% of equity instead of 10%. Review both changes after the week of 11-16.
 Process failures this week (all fixed): a phantom Thursday NVDA same-day contract (expiry calendar), NBIS earnings date one day
 early, the 09:15 scheduled start arriving 90 min late on 11-13 (started by hand at 09:46), equity misquoted once ($1,089 vs $1,103).
 
@@ -589,7 +589,7 @@ rules; winners scored the same way so a rule only counts if it removes more losi
 Read as a $1,000 CASH account for November (`analysis/bankroll.py`, START 2026-11-02): every funded paper trade
 (book=paper, created ≥ START) is paid from it, proceeds return on close, so wins compound and losses shrink the
 next trade. Caps are fractions of current EQUITY, always within available cash:
-- **day trade ≤ 50% of equity, max 2 open** (−20% stop = ≤ 10% of equity per trade). The engine re-reads the book
+- **day trade ≤ 25% of equity, max 2 open** (−20% stop = ≤ 5% of equity per trade; 50% until 11-13). The engine re-reads the book
   each signal (`dt_budget`); a $500 cap pushes some strikes toward 0.4σ or skips them. Checked first: in-budget
   ≤ $500 signals did no worse than $500-1,000 ones (−3.4% vs −3.2%, month_review signals).
 - **1-day ticket pair ≤ 10% of equity, max 2 pairs/night** (the premium can go to zero). Exits at the open are

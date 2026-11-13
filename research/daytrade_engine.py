@@ -266,7 +266,7 @@ while True:
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
                     c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq, sa) if not g else None
-                    if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} with a real quote and a spread <= {DT_MAX_SPREAD:.0%} (November book: 50% of equity, within cash, max 2 open)')
+                    if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} with a real quote and a spread <= {DT_MAX_SPREAD:.0%} (November book: 25% of equity, within cash, max 2 open)')
                     if g:
                         if key not in st['rej']:
                             ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x{vflag}")

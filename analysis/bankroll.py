@@ -5,7 +5,7 @@ Interpretation: a $1,000 CASH account for the month. Every funded paper trade (b
 on/after START) is paid from it; proceeds come back when it closes, so wins compound and losses
 shrink the next trade. A new entry needs its premium <= available cash AND <= its strategy's cap,
 and caps are a fraction of current EQUITY (so they shrink after losses and grow after wins):
-  day trade   <= 50% of equity (a -20% stop = 10% of equity at most), max 2 open at once
+  day trade   <= 25% of equity (a -20% stop = 5% of equity at most; was 50% until 11-13, user: "apply it"), max 2 open at once
   1-day pair  <= 10% of equity per pair, max 2 pairs a night (premium can go to zero)
   trend-hold  <= 50% of equity, max 1 open (a -50% stop = 25% of equity at most)
   same-day    <= 2% of equity, 1 ticket a day (user 11-03 'fund a tiny slot'; backtest -32%/ticket)
@@ -18,7 +18,7 @@ from __future__ import annotations
 import pandas as pd
 
 START, CAPITAL = "2026-11-02", 1000.0
-CAP = {"daytrade": 0.50, "lottery": 0.10, "trendhold": 0.50, "zerodte": 0.02}
+CAP = {"daytrade": 0.25, "lottery": 0.10, "trendhold": 0.50, "zerodte": 0.02}
 MAX_OPEN = {"daytrade": 2, "trendhold": 1, "zerodte": 1}
 COST = {"daytrade": 0.04, "lottery": 0.10, "zerodte": 0.10, "trendhold": 0.04, "strangle": 0.04}   # round-trip spread estimate
 BOOK = "/home/user/options/data/recommendations.csv"
