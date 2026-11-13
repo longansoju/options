@@ -403,6 +403,38 @@ report was.
   $60 + $147 = **$207 (2.9x the model)**, over the ~$123 cap -> NOT booked. Rule: a no-quote LT/Z0 entry is re-fetched
   before booking; if the real ask is over the cap, or the contract is not listed, it is void.
 
+### WEEK REVIEW 11-09 -> 11-13 (user: "we've been losing quite a bit this week ... make the required improvements")
+Funded November book by week: **wk 11-02..06 +$1,011** (day trades +$265, 1-day tickets +$668 - almost all one AAPL pair with
+a MODEL entry, same-day +$78) -> **wk 11-09..13 -$908** (day trades **-$887**: 11 trades, 2 wins; 1-day tickets -$43; same-day +$22).
+Equity $1,000 -> $2,114 peak (11-05) -> $1,103 (11-13, 14:30 ET). Where the -$887 went:
+- **-$566 (64%) is three fills that were stopped in <= 4 minutes with the stock barely moving** - MSFT put 19% spread (-$158),
+  COHR call 65% (-$374), SMCI put 18% (-$34). The spread, not the trade.
+- **-$321 is eight ordinary trades at 7.5-13% spreads, 2 wins** (TSM, VRT, NBIS, 2x SMCI stops; GOOGL +45, SMCI +31, NVTS -2).
+**The methodology error (mine): the +20/-20/120m rule was pen-tested with a flat 4% friction, but since real fills (11-04) a
+position is marked at the BID against the ASK paid - a 10% spread starts the trade at about -10%, so the -20% stop is ~10% of
+mid movement away and the +20% target ~30%.** `research/spread_stop.py` (102 gate-passing signals, 40 sessions):
+| real spread | win | avg (IS / OOS) |
+|---|---|---|
+| 4% | 41% | -3.0% (-6.8 / +1.1) |
+| 8% | 32% | -6.4% (-10.2 / -2.2) |
+| 12% | 18% | -10.6% (-14.5 / -6.3) |
+| 16% | 7% | -14.7% (-17.9 / -11.3) |
+About one point of return lost per point of spread. Live November day trades agree: spread <= 8%: 10 trades, 60% win, +$116;
+> 8%: 11 trades, 1 win, -$812. Real 2-week ask quotes logged so far (419): median spread 7%, 68% are <= 10%; by name AVGO 4%,
+MRVL 5%, DELL 5%, SMCI/GOOGL/TSM 8-9%, VRT 9%, NVTS 10%, MU 13%, STX 15%, MSFT 18%, COHR 18%.
+**ADOPTED 11-13 (in `research/daytrade_engine.py`, live from 14:35 ET):**
+1. **Day trades need a real quote with a spread <= 10% of mid** (`DT_MAX_SPREAD`; = `config.MAX_BID_ASK_SPREAD_PCT`, the
+   system's original liquidity filter - not a fitted number). Supersedes the pending 15% proposal. Same-day tickets keep 25%.
+2. **No real quote -> no trade**, for day trades, same-day tickets and 1-day tickets (coded in both engines; was a manual rule).
+**Tested and NOT adopted:** measuring the stop/target on the MID instead of the bid - better by only 0.3-1.4 points and worse
+in P2 at 4% and 8%; fails the every-period rule.
+**Not changed, and why:** the gates (every review, incl. this week's ~25 rejected signals, says they cost ~nothing); exits
+(9 variants failed 11-01); the 2-open cap. **Still true:** even at a 4% spread the rule averages -3%; a spread cap removes the
+avoidable part of the loss, it does not create an edge. Position size (50% of equity per day trade) is the USER's call -
+proposed 11-13: 25%, so a -20% stop costs 5% of equity instead of 10%.
+Process failures this week (all fixed): a phantom Thursday NVDA same-day contract (expiry calendar), NBIS earnings date one day
+early, the 09:15 scheduled start arriving 90 min late on 11-13 (started by hand at 09:46), equity misquoted once ($1,089 vs $1,103).
+
 ### 11-04 review (user: "what could you have done better") — `research/review_1104.py`, `research/sector_cap.py`
 Day: tech/banks rallied (AAPL +5.7%, MSFT, JPM, V up), chips broke down 10:45-11:00. Taken: NBIS put −5%
 (model, no quote), NVTS put −20% (stop on a $0.02 move — the 20% bid-ask spread did it), SMCI put −13% (late
@@ -421,7 +453,7 @@ calls +6.6% at RV but −2.8% real (n=6) — the gate again cost ~nothing; slot-
   bought at 3.80/7.50 (65% spread, vol 6, OI 75) — −45% at entry, stopped 1 min later with COHR UP, −$374 booked at
   the real bid. A > 25% spread is not a market, same class as the 10-07 volume-suspect guard. Wide-spread record so far:
   NVTS 20% −20% (11-04), MU Z0 36% −50% (11-09), MSFT 19% −20% in 1 min (11-10), MU Z0 35% +100% (11-11), COHR 65%
-  −44% (11-11), SMCI put 18% −24% in 4 min on a 0.6% move (11-13). A tighter 15% cap is the USER's decision (proposed 11-10); test the threshold on `data/quote_log.csv`.
+  −44% (11-11), SMCI put 18% −24% in 4 min on a 0.6% move (11-13). A 10% cap for day trades was ADOPTED 11-13 (week review above); the 25% guard remains for same-day tickets.
   Exits on wide-spread fills are booked at the REAL bid, not the −20% rule level, so the book does not hide the spread.
 - Process misses (fixed or noted): a META put rejection at 14:25 was never relayed (monitor re-arm failed while
   the permission check was down — "nothing fired" was a gap, not silence); the stale-signal hole above; the

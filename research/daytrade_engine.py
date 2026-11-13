@@ -65,6 +65,10 @@ def quote_buy(occ, S, Sq, T, rv, model, sa=None):
 
 MAX_SPREAD = 0.25   # 11-11 data-quality guard: a quote whose spread is > 25% of mid is not a tradeable market (COHR 11-11: 3.80/7.50 = 65%, vol 6 ->
                     # -45% at entry, -$374). Skip that strike. A tighter cap (15%) is pending the user's decision and the quote-log test.
+DT_MAX_SPREAD = 0.10   # 11-13 week review (user: "make the required improvements"): 2-week day trades need a real quote with a spread
+                       # <= 10% of mid (= config.MAX_BID_ASK_SPREAD_PCT, the system's original liquidity filter). research/spread_stop.py:
+                       # the +20/-20 rule loses about one point per point of spread (4% -3.0%, 8% -6.4%, 12% -10.6%, 16% -14.7%); live Nov:
+                       # spread <= 8% 10 trades 60% win +$116, > 8% 11 trades 1 win -$812. Z0 same-day tickets keep the 25% guard.
 
 
 def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None, sa=None):
@@ -76,7 +80,8 @@ def pick(sym, S, kind, ts, rv, budget=BUDGET, Sq=None, sa=None):
         if sig > 0.4: continue
         occ = f"{sym}{EXPIRY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
         f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
-        if f_.get('spread', 0) > MAX_SPREAD: continue
+        if f_['src'] == 'model': continue                      # 11-13: no real quote -> no trade (the spread cannot be checked)
+        if f_.get('spread', 0) > DT_MAX_SPREAD: continue
         if prem <= budget:
             c = dict(K=K, prem=prem, sig=sig, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
             if best is None or abs(sig - 0.2) < abs(best['sig'] - 0.2): best = c
@@ -122,6 +127,7 @@ def z_pick(sym, S, kind, ts, rv, cap, Sq=None, sa=None):
         if abs(math.log(K / S)) / sd > 1.6: continue   # 11-05: the listed-strike snap pushed META to 1.85 sigma - keep the slot at ~1.0-1.5
         occ = f"{sym}{TODAY.strftime('%y%m%d')}{'C' if kind == 'call' else 'P'}{int(round(K * 1000)):08d}"
         f_ = quote_buy(occ, S, Sq or S, T, rv, bs(S, K, T, rv, kind) * 100, sa); prem = f_['prem']
+        if f_['src'] == 'model': continue                      # 11-13: no real quote -> no ticket (11-12: NVDA261112C00170000 did not exist)
         if f_.get('spread', 0) > MAX_SPREAD: continue
         if 1 <= prem <= cap:
             return dict(K=K, prem=prem, sig=abs(math.log(K / S)) / sd, occ=occ, ivx=f_['ivx'], src=f_['src'], note=f_['note'])
@@ -260,7 +266,7 @@ while True:
                     g = gates(p, kind, s)
                     bud = dt_budget(st) if not g else 0.0
                     c = pick(s, px, kind, x.index[-1], p['rv'], bud, Sq, sa) if not g else None
-                    if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} with a spread <= {MAX_SPREAD:.0%} (November book: 50% of equity, within cash, max 2 open)')
+                    if not g and c is None: g.append(f'no 0-0.4 sigma strike within ${bud:,.0f} with a real quote and a spread <= {DT_MAX_SPREAD:.0%} (November book: 50% of equity, within cash, max 2 open)')
                     if g:
                         if key not in st['rej']:
                             ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x{vflag}")

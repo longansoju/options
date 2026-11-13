@@ -86,6 +86,8 @@ def run(exits_only=False):
         occ = lambda k, K: f"{s}{nxt.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
         Sq = oq.spot_at(s) or S   # the delayed quote was made against the spot ~15 min ago
         qc, qp = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_)), oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_))
+        if not qc or not qp:   # 11-13: no real quote on a leg -> no ticket (11-12: the NVDA pair was model $71, real $207 - over the cap)
+            print(f"   LT signal {tag}REJECTED: no real quote on {'the call' if not qc else 'the put'} (model pair ${mc + mp:.0f}; a model-priced ticket is not booked)"); continue
         pc, pp = (qc['prem'] if qc else mc), (qp['prem'] if qp else mp)
         src = lambda q, m: (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or 0:.3f}" if q else f"NO QUOTE - model ${m:.0f} (flag price_source=model)")
         cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
