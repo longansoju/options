@@ -507,6 +507,27 @@ price); the remaining untested inputs are option-side (IV skew, option volume) -
 Real IV from the screenshot: $5.90 at MU 759.21, 5.6h left -> **IV 0.56 = 0.62x RV30 (90%)** - same-day IV far BELOW
 RV30 on a name whose RV30 is inflated by the last two weeks (as on 11-11: 0.6x).
 
+### MU fade 11-19 — "you were looking out for it, what made you miss the entry timing" (user)
+Timeline (1m closes): MU gapped +5.0% (740), failed a break of the 753.50 OR high (7 closes, 10:03-10:09, then 753.20 at
+10:10), slid under VWAP (~746) by 10:15, first closed below the 731.25 OR low at 10:25 (back above 10:26 - reset), crossed
+again at **10:29 (731.05)**, HOLD5 at 10:33 (723.87), **HOLD10 at 10:38 (717.99)**. The engine printed at 10:39 (rejected: no
+strike under the $262 cap), I relayed at ~10:40; MU low 710.60 at 10:41, back to ~718 by 10:50. What went wrong, honestly:
+1. **The user got nothing between the first cross (10:29) and confirmation (10:38).** The engine only speaks at
+   confirmation, and I was relaying engine events instead of watching the user's own levels. A manual trader needs the
+   heads-up at the cross to open the chain and check the spread, so they can act AT confirmation, not 2 minutes after.
+2. **The confirmation itself had little room left:** 717.99 to the 705 target was 1.8% = **~0.35 remaining-session sigma**
+   (RV30 90%). The 10-close rule spent half the trigger-to-target distance. I gave the target levels pre-market but never
+   said "if it confirms below ~725, there's not enough room left" - the room check belongs in the plan.
+3. **Not a reason to shorten the 10-close rule:** the SAME morning the call side failed after 7 closes above 753.50 (a
+   5-close rule would have bought ~756 and lost); the 10-06 pen-test found no hold length that helped. One fast fade is not
+   evidence (the 10-08 / 09-14 lessons).
+**Fix (process + tool, no trading-rule change): `research/level_watch.py`** - when the user names levels on a name they
+trade by hand, arm it with a Monitor (`python -u research/level_watch.py MU:731.25:down:705 MU:753.5:up:770 --rv 0.90`):
+it prints CROSS (heads-up), HOLD5, HOLD10 (with the bar time of the 10th close, % and sigma room left to the target, and
+LATE if < 0.5 sigma), FAIL (back inside, count reset) and STALE (> 10 min after confirmation: do not chase). Replayed on
+11-19 it reports CONFIRMED at the 10:38 close, 0.46 sigma left -> LATE. Pre-market plans must state the confirmation
+price below/above which a trade is too late to take.
+
 ### SAME-DAY TICKET SLOT — funded from 2026-11-03 (user: "be slightly more open to such trades" → chose "fund a tiny slot")
 Chosen knowingly over "track only": the screen above says ~−32% per ticket, so the expected cost is roughly
 $7/day (~$140/month) of the November book. Rules (`research/daytrade_engine.py`, `ZDAILY`, `z_pick`): the FIRST
