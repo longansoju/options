@@ -98,6 +98,7 @@ def run():
         if score < M['thr'] or n >= MAXN: break
         if why: print(f"   SG signal {s} score {score:.2f} REJECTED: {'; '.join(why)}"); continue
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30
+        if age > er.STALE_SPOT_MIN: print(f"   SG signal {s} score {score:.2f} REJECTED: spot print {age:.0f} min old (> {er.STALE_SPOT_MIN}) - stale data, not priced"); continue
         exp = friday_after(today); T = T_at(now, exp); sdv = rv * math.sqrt(T); st = inc(S)
         Kc = oq.snap(s, exp, math.ceil(S * math.exp(SIG * sdv) / st) * st, 'up'); Kp = oq.snap(s, exp, math.floor(S * math.exp(-SIG * sdv) / st) * st, 'down')   # listed strikes (11-05)
         mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv, 'put') * 100

@@ -112,11 +112,28 @@ def live_price(symbol: str) -> tuple[float, float]:
     """Latest regular-session 1m close and its age in minutes. The 15:50 engines priced entries off
     daily_frame(), whose last bar is rebuilt from 5m bars - on 2026-10-30 that was ~30 min stale
     (NVDA logged 202.90 vs 204.75 live; a 1-DTE ticket was priced off a stale spot). Use this for S."""
-    m = fetch_chart(symbol, "1m", "1d").dropna()
-    m = m[(m.index.time >= dt.time(9, 30)) & (m.index.time < dt.time(16, 0))]
-    last = m.index[-1]
-    age = (pd.Timestamp.now(tz=last.tz) - last).total_seconds() / 60 - 1   # bar stamp = bar start
-    return float(m.C.iloc[-1]), max(age, 0.0)
+    def _one(m):
+        m = m[(m.index.time >= dt.time(9, 30)) & (m.index.time < dt.time(16, 0))]
+        last = m.index[-1]
+        age = (pd.Timestamp.now(tz=last.tz) - last).total_seconds() / 60 - 1   # bar stamp = bar start
+        return float(m.C.iloc[-1]), max(age, 0.0)
+    best = None
+    try: best = _one(fetch_chart(symbol, "1m", "1d").dropna())
+    except Exception: pass
+    # 11-18: the chart endpoint returned a 299-minute-old NVDA print at 15:50 (152.82 vs live 150.84) and the strangle
+    # was priced off it. If the first source is more than 5 minutes old, try yfinance's 1m history and keep the fresher.
+    if best is None or best[1] > 5:
+        try:
+            import yfinance as yf
+            h = yf.Ticker(symbol).history(period="1d", interval="1m").rename(columns={"Close": "C"})
+            alt = _one(h)
+            if best is None or alt[1] < best[1]: best = alt
+        except Exception: pass
+    if best is None: raise RuntimeError(f"no 1m print for {symbol}")
+    return best
+
+
+STALE_SPOT_MIN = 10   # the 15:50 engines refuse an entry priced off a spot older than this (11-18 lesson)
 
 
 # ------------------------------------------------------------------- math utils

@@ -80,6 +80,7 @@ def run(exits_only=False):
         if why: print(f"   LT signal {tag}REJECTED: {'; '.join(why)}"); continue
         if n >= MAXN: print(f"   LT signal {tag}SKIPPED: max {MAXN}/night"); continue
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30 (NVDA 202.90 vs 204.75)
+        if age > er.STALE_SPOT_MIN: print(f"   LT signal {tag} REJECTED: spot print {age:.0f} min old (> {er.STALE_SPOT_MIN}) - stale data, not priced"); continue
         T = (mins / 390 + 1) / 252; sdv = rv * math.sqrt(1 / 252); st = inc(S)
         Kc = oq.snap(s, nxt, math.ceil(S * math.exp(sdv) / st) * st, 'up'); Kp = oq.snap(s, nxt, math.floor(S * math.exp(-sdv) / st) * st, 'down')   # listed strikes (11-05)
         mc, mp = bs(S, Kc, T, rv, 'call') * 100, bs(S, Kp, T, rv * SKEW, 'put') * 100

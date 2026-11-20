@@ -435,6 +435,11 @@ a -20% stop costs 5% of equity instead of 10%. Review both changes after the wee
 Process failures this week (all fixed): a phantom Thursday NVDA same-day contract (expiry calendar), NBIS earnings date one day
 early, the 09:15 scheduled start arriving 90 min late on 11-13 (started by hand at 09:46), equity misquoted once ($1,089 vs $1,103).
 
+- **Stale-spot guard (added 11-20 after the 11-18 close):** the 15:50 strangle run priced NVDA off a 1m print 299 minutes old
+  (152.82 vs live 150.84); caught by eye and re-run at 15:56. `er.live_price()` now falls back to yfinance 1m history when the
+  chart endpoint's last print is > 5 min old and keeps the fresher one; the strangle, 1-day ticket and trend-hold engines
+  REJECT an entry whose spot is > `er.STALE_SPOT_MIN` (10) minutes old instead of pricing it.
+
 ### 11-04 review (user: "what could you have done better") — `research/review_1104.py`, `research/sector_cap.py`
 Day: tech/banks rallied (AAPL +5.7%, MSFT, JPM, V up), chips broke down 10:45-11:00. Taken: NBIS put −5%
 (model, no quote), NVTS put −20% (stop on a $0.02 move — the 20% bid-ask spread did it), SMCI put −13% (late
