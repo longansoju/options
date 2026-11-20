@@ -440,6 +440,23 @@ early, the 09:15 scheduled start arriving 90 min late on 11-13 (started by hand 
   chart endpoint's last print is > 5 min old and keeps the fresher one; the strangle, 1-day ticket and trend-hold engines
   REJECT an entry whose spot is > `er.STALE_SPOT_MIN` (10) minutes old instead of pricing it.
 
+### WEEK REVIEW 11-16 -> 11-20 (the 25% size cap + 10% spread cap, adopted 11-13) - `research/week_review.py`
+Funded book: **-$63** for the week (day trades 2 taken, both -20% stops: -$43; same-day tickets 3: -$23; 1-day ticket 1 pair:
++$3) vs -$908 the week before; equity $1,103 -> $1,040. Tape: a three-day chip collapse (SMH 460 -> 400, NVDA 150 -> 127.5
+on 11-20, MU 760 -> 592 from the 11-19 high). All 74 engine signals replayed (model mid path at RV30, live exits, charged
+a 4% and an 8% real spread - 8% is the median logged 2-week spread):
+| why not taken | n | win (8%) | avg @4% | avg @8% |
+|---|---|---|---|---|
+| size cap / spread cap | 38 | 47% | +3.3% | **-1.5%** |
+| gates | 34 | 53% | +6.1% | +1.9% |
+| taken | 2 | 0% | -11.8% | -20.0% |
+Gate-passing signals that fit $262: n=7, -13.8%; that fit the old $524: n=15, -6.9% - the 8 extra trades a 50% cap would
+add averaged about -1%. **Verdict: no evidence for raising the cap; the caps kept the book out of a roughly break-even set
+at real spreads and cut the week's loss from -$908 to -$63.** The +15% "missed puts" read on 11-19 was pre-spread; charged
+at 8% the same 16 signals were -1%. Caveats: one week, a one-way selloff, model prices. User decides the size (11-20).
+Strangle WATCH rows (unfunded) made +$1,133 on $5,411 - almost all one night (NVDA 11-19 -> 11-20, put +376%); the 20-night
+review stands.
+
 ### 11-04 review (user: "what could you have done better") — `research/review_1104.py`, `research/sector_cap.py`
 Day: tech/banks rallied (AAPL +5.7%, MSFT, JPM, V up), chips broke down 10:45-11:00. Taken: NBIS put −5%
 (model, no quote), NVTS put −20% (stop on a $0.02 move — the 20% bid-ask spread did it), SMCI put −13% (late
