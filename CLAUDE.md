@@ -931,15 +931,31 @@ next day moves >= 5% three times as often as normal, but in EITHER direction (-5
 flip). `research/repeat_lottery.py` - the ~1 daily-sigma next-session put bought at that close and sold at the next close,
 101 nights / 5y / 27 names, 10% friction: **IV = 1.0x RV30 +71%/ticket, 1.3x -14%, 1.6x -45%; median -100%, win 14-17%.**
 The only lever is the PRICE: real 1-day tickets logged so far ran 1.35-2.1x RV30 (losing zone).
-**Engine `research/revticket_engine.py` (15:50 ET, after the 1-day ticket engine). `strategy=revticket`.**
-Signal as above; 1 put ~1.0 daily-sigma OTM, next-session expiry only if listed; real quote required; **FUNDED (book=paper)
-only if IV at the ask <= 1.10x RV30 AND the ask <= 2% of equity (`bankroll.CAP['revticket']`), max 2/night**; every other
-signal is LOGGED as book=watch with its real IV so the forward test collects data. Blocks: earnings today/next session, no
-verified date, stale spot. Exit: next session's 15:50 run at the real bid. 11-19 replay: 9 names fired the same night (MRVL,
-MU, NBIS, SMCI, DELL, CRDO, NVTS, MPWR, GOOGL) - signals cluster on sector reversal days, so the 2/night cap matters.
-**Review at 30 signals:** real IV/RV distribution, share fundable, funded P&L vs the test's rows. Not income: a lottery
-slot; the median ticket goes to zero. Manual use (the user's own account): same rules, <= 1-2% of capital per ticket,
-take part off at 2-3x and trail the rest (exit playbook, 11-21).
+**Engine `research/revticket_engine.py` (15:50 ET, after the 1-day ticket engine). `strategy=revticket`.** Revised 11-21 after
+`research/revticket_coverage.py` (user: "verify that your triggers have good coverage", "make the cap more loose"):
+- **Coverage, measured:** >= 4x next-day 1-sigma tickets happen on ~8% of name-nights (5,227 of 32,245 at IV=RV) and the night
+  before looks like any night (closed at an extreme 25% vs 24%). The MU-night trigger alone flags 0.2% of them. No
+  price/volume trigger catches most - buying nearly every night loses (-16%/night at RV). Five variants pre-specified:
+  looser gap 2% / bottom 20% FAILED IS (-4% at RV); the call mirror (failed gap-down -> call) FAILED (-19%); **B = big-volume
+  (> 1.5x), big-range (> 2 sd above its 30d mean) close in the bottom/top 10% -> put/call with the close: +113% at RV (IS +171 /
+  OOS +56), +63% at 1.1x (+108 / +20), +8% at 1.3x (OOS -21)** - adopted as trigger B. A+B: ~99 signals/yr, ~1% coverage.
+- **Vehicle:** nearest listed expiry within 7 days (next session if listed, else the coming Friday), sold at the next close.
+  Better than next-session-only: A+B at 1.1x +49% (IS +87 / OOS +19), win 24%, median -76%, longest losing run 20 (vs 39).
+- **Funding (tiered, ~half the growth-optimal fraction):** IV at the ask <= 1.00x RV30 -> up to **5% of equity**; 1.00-1.10x ->
+  **2.5%**; above 1.10x -> watch only (OOS ~0 at 1.2x). Contracts = as many as fit, max 3 (so the 2-part exit is possible),
+  max 2 funded names/night. "Uncap when the chance is high" NOT adopted: the win rate is ~15-25% at every IV level - the
+  edge is payoff, never probability - and full growth-optimal is only 4-9% of equity; a 20-loss run at 5% is about -55%.
+- 11-19 replay: 9 A-signals (MRVL, MU, NBIS, SMCI, DELL, CRDO, NVTS, MPWR, GOOGL); 11-20: B-puts on AVGO, NVDA, TSM, ASML.
+  First real quote (11-20 after hours, TSM261127P00307500, 4 sessions): IV 1.80x RV30 -> watch.
+- Blocks: earnings today/next session, no verified date, stale spot (> 10 min). Exit: next session's 15:50 run at the real
+  bid. **Review at 30 signals.** Not income: a lottery slot; the median ticket loses most of its value.
+- Manual use (the user's account): same tiers; with 2-3 contracts take part off at 2-3x and trail the rest (exit playbook,
+  11-21). The user's own MU 680P (1 @ $1.50 -> $10.00 on 11-19, expired $88.01) is booked `book=real`.
+
+**1-day tickets stay on while profitable (user 11-21: "should still remain valid if they are profitable").** Record to 11-20:
+18 legs +$628 on $705 - but ~$590 is the 11-03 AAPL pair with a MODEL entry; the 5 pairs with a real ask AND a real bid are
+-$72 on $474 (-15%). Rule: keep running; at 20 real-fill pairs, continue if the real-fill P&L after costs is >= 0, stop only
+if it is negative AND real IV is >= ~1.4x RV30. Model-entry rows do not count toward "profitable".
 
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
