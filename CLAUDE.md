@@ -923,6 +923,24 @@ Review at 20 nights: compare real quoted IV with RV30 — if real IV ≥ ~1.4x R
 Note: the backtest's big nights were mostly weekly-only names (CRDO/STX/NVTS/COHR/DELL/SMCI); the
 expiry restriction means the live sample is smaller and tilted to mega-caps.
 
+### REVERSAL TICKETS — the MU 261120 680P setup as a fixed-rule paper strategy (from 2026-11-21, user: "fix the rules based on how you want me to do it properly and add it as a strategy")
+Origin: the user bought `MU261120P00680000` at 1.50, sold at 10.00 on 11-19; MU had gapped +5% to 740, failed at 760 and closed
+AT THE LOW (690.44); overnight NAND-price warnings -> 11-20 -13.9% (594.51), the put expired at 88.01.
+Tests (pre-specified): `research/reversal_close.py` - after a failed gap-up (>= +3%, closes red, bottom 10% of the range) the
+next day moves >= 5% three times as often as normal, but in EITHER direction (-5%: 19.6%, +5%: 17.6%, n=102; direction a coin
+flip). `research/repeat_lottery.py` - the ~1 daily-sigma next-session put bought at that close and sold at the next close,
+101 nights / 5y / 27 names, 10% friction: **IV = 1.0x RV30 +71%/ticket, 1.3x -14%, 1.6x -45%; median -100%, win 14-17%.**
+The only lever is the PRICE: real 1-day tickets logged so far ran 1.35-2.1x RV30 (losing zone).
+**Engine `research/revticket_engine.py` (15:50 ET, after the 1-day ticket engine). `strategy=revticket`.**
+Signal as above; 1 put ~1.0 daily-sigma OTM, next-session expiry only if listed; real quote required; **FUNDED (book=paper)
+only if IV at the ask <= 1.10x RV30 AND the ask <= 2% of equity (`bankroll.CAP['revticket']`), max 2/night**; every other
+signal is LOGGED as book=watch with its real IV so the forward test collects data. Blocks: earnings today/next session, no
+verified date, stale spot. Exit: next session's 15:50 run at the real bid. 11-19 replay: 9 names fired the same night (MRVL,
+MU, NBIS, SMCI, DELL, CRDO, NVTS, MPWR, GOOGL) - signals cluster on sector reversal days, so the 2/night cap matters.
+**Review at 30 signals:** real IV/RV distribution, share fundable, funded P&L vs the test's rows. Not income: a lottery
+slot; the median ticket goes to zero. Manual use (the user's own account): same rules, <= 1-2% of capital per ticket,
+take part off at 2-3x and trail the rest (exit playbook, 11-21).
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
