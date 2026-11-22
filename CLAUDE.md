@@ -957,6 +957,19 @@ The only lever is the PRICE: real 1-day tickets logged so far ran 1.35-2.1x RV30
 -$72 on $474 (-15%). Rule: keep running; at 20 real-fill pairs, continue if the real-fill P&L after costs is >= 0, stop only
 if it is negative AND real IV is >= ~1.4x RV30. Model-entry rows do not count toward "profitable".
 
+### Bollinger Bands (user 11-22: "can I use VWAP and BOLL", "run the bollinger test on the day trades") - NOT adopted
+`research/boll_test.py` (27 names, 5y daily): a close BELOW the lower band(20, 2) bounced, next 5 days +1.68% (56% up; IS +1.0 /
+OOS +2.4) vs +0.83% on any day; a close ABOVE the upper band stalled (+0.01%, 50% up); a squeeze (width in its bottom 10%)
+gives slightly bigger 5-day moves (9% vs 7% > 2 sd), no direction. `research/boll_dt.py` then tested it as a day-trade "don't
+chase" gate (52 sessions 09-10 -> 11-20, 142 gate-passing signals, stops on the bid, 8% real spread), PRE-SPECIFIED:
+A = prior close outside the band, B = entry price outside the band. **Both FAIL - the opposite happened intraday:** the
+signals the gate would block did BETTER (B-outside n=39: +1.1% vs -6.2% kept; better in both halves and all three thirds;
+A-outside n=16: +0.0% vs -4.8%). Timescale, not contradiction: the daily bounce plays out over days, a day trade is closed
+within 120 minutes and rides the same-day push. Do NOT flip it into "only trade outside the band" on this run - that is the
+post-hoc flip the 10-05 day-trade note forbids (n=39, one test). Use: as a warning for MULTI-DAY puts/calls only (no fresh
+put the day after a close below the lower band), not as a day-trade gate. Logging the entry's band position (z) on live day
+trades for a forward check was proposed to the user 11-22.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day
