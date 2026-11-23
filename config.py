@@ -127,7 +127,7 @@ DAYTRADE_EARNINGS: dict[str, str] = {
     "COHR": "2026-11-04",   # company release 10-14: FY27 Q1 after the close 11-04
     "NVTS": "2026-11-03",   # company release 10-13: Q3 after the close 11-03
     "MPWR": "2026-10-29",   # company release: Q3 after the close 10-29 (reported)
-    "DELL": "2026-11-25",   # AJ Bell calendar estimate (not yet announced by Dell) - re-verify
+    "DELL": "2026-11-24",   # 11-23: arincen calendar says 11-24 after the close (was the 11-25 estimate); earlier date taken per the ambiguous-date rule - not yet confirmed by Dell IR
     "MRVL": "2026-12-01",   # VERIFIED 11-09: company PR (11-06) - FQ3 FY27 results Tue 12-01 after the close, call 1:30 PT (the 11-25 estimate was wrong)
     # CRDO: no announced or calendar date found 10-30 (last year early Dec) - left blocked
     # batch 1
