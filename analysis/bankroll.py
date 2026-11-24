@@ -18,8 +18,8 @@ from __future__ import annotations
 import pandas as pd
 
 START, CAPITAL = "2026-11-02", 1000.0
-CAP = {"daytrade": 0.25, "lottery": 0.10, "trendhold": 0.50, "zerodte": 0.02, "revticket": 0.05}   # revticket: 11-21, tiered in the engine: <= 5% of equity at IV <= 1.0x RV30, 2.5% at 1.0-1.1x
-MAX_OPEN = {"daytrade": 2, "trendhold": 1, "zerodte": 1, "revticket": 2}
+CAP = {"daytrade": 0.25, "lottery": 0.10, "trendhold": 0.50, "zerodte": 0.02, "revticket": 0.05, "strangle": 0.10}   # strangle slot B 11-24: <= 10% of equity per pair, 1 pair; revticket: 11-21, tiered in the engine: <= 5% of equity at IV <= 1.0x RV30, 2.5% at 1.0-1.1x
+MAX_OPEN = {"daytrade": 2, "trendhold": 1, "zerodte": 1, "revticket": 2, "strangle": 2}   # strangle: 2 legs = 1 pair
 COST = {"daytrade": 0.04, "lottery": 0.10, "zerodte": 0.10, "revticket": 0.10, "trendhold": 0.04, "strangle": 0.04}   # round-trip spread estimate
 BOOK = "/home/user/options/data/recommendations.csv"
 

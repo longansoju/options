@@ -12,12 +12,18 @@ model fills against the real moomoo chain, not a claimed edge. Paper fills are B
 the same convention as every other paper fill - REPLACED 11-04: fills now use the real Yahoo chain
 (ask in, bid out, IV logged; analysis/option_quotes.py), the model is only the no-quote fallback. Blocks: earnings today or next session (an
 overnight hold through a print is a different trade), no verified earnings date.
-`fit` refits weights from strangle_rows.pkl (run strangle_bt.py first) -> strangle_model.json."""
+`fit` refits weights from strangle_rows.pkl (run strangle_bt.py first) -> strangle_model.json.
+FUNDED SLOT B (user 11-24: "B"): on a name whose day had volume > 1.5x its 20-day average AND a range > 2 sd (strangle_bt.py,
+next-close exit: +12.8% at IV = RV, IS +10.9 / OOS +14.4; break-even 1.10-1.13x), the same 0.2-sigma strangle is FUNDED from the
+November book only if BOTH legs have a real quote with IV at the ask <= 1.05x RV30 (threshold fixed in advance, under the
+break-even) and the pair fits 10% of equity (bankroll.CAP['strangle']); 1 funded pair per night. Every other B signal is logged
+as book=watch with its real IV. Same blocks (earnings today/next session, no verified date, stale spot) and the same exit."""
 import sys, os, json, math, datetime as dt, warnings
 warnings.filterwarnings('ignore')
 sys.path.insert(0, '/home/user/options')
 import numpy as np, pandas as pd, config
 from analysis import event_radar as er
+from analysis import bankroll
 from analysis import option_quotes as oq   # 11-04: real fills - buy at the ASK, sell at the BID (Yahoo, ~15m delayed)
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.join('/home/user/options/research', 'strangle_model.json')
@@ -25,6 +31,7 @@ SYMS = config.FOCUS_AI_SEMI_IT + config.DAYTRADE_EXPANSION
 FEATS = ['z_r1', 'z_gap', 'z_id', 'clv', 'z_rng', 'z_r3', 'z_r5', 'z_r10', 'ma20', 'ma50', 'volx',
          'smh_r1', 'smh_clv', 'rel_r1', 'qqq_r1', 'fomc', 'fri', 'rv']
 TARGET, BUDGET, MAXN, SIG = 'close1_1.15', 1000.0, 3, 0.2
+B_IV_MAX = 1.05   # 11-24 funded slot B: IV at the ask / RV30 on both legs
 EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()}
 
 
@@ -90,12 +97,43 @@ def run():
         why = []
         if s not in EARN: why.append('no verified earnings date')
         elif today <= EARN[s] <= nxt: why.append(f'earnings {EARN[s]} before the exit')
-        cands.append((score, s, float(d.C.iloc[-1]), float(F.rv.iloc[-1]), why))
+        cands.append((score, s, float(d.C.iloc[-1]), float(F.rv.iloc[-1]), why, float(F.volx.iloc[-1]) > math.log(1.5) and float(F.z_rng.iloc[-1]) > 2, float(np.exp(F.volx.iloc[-1])), float(F.z_rng.iloc[-1])))
     cands.sort(reverse=True)
     print(f"[{now:%H:%M}ET] strangle model | line {M['thr']:.3f} | top scores: " + ', '.join(f"{s} {sc:.2f}" for sc, s, *_ in cands[:6]))
+
+    def price(s, rv):
+        S, age = er.live_price(s)
+        exp = friday_after(today); T = T_at(now, exp); sdv = rv * math.sqrt(T); st = inc(S)
+        Kc = oq.snap(s, exp, math.ceil(S * math.exp(SIG * sdv) / st) * st, 'up'); Kp = oq.snap(s, exp, math.floor(S * math.exp(-SIG * sdv) / st) * st, 'down')
+        occ = lambda k, K: f"{s}{exp.strftime('%y%m%d')}{k}{int(round(K * 1000)):08d}"
+        Sq = oq.spot_at(s) or S
+        qc = oq.fill(occ('C', Kc), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_))
+        qp = oq.fill(occ('P', Kp), 'buy', S, Sq, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_))
+        return S, age, exp, occ('C', Kc), occ('P', Kp), qc, qp
+
+    # ---- funded slot B (11-24): big-volume, big-range day + real IV <= 1.05x RV30 on both legs
+    funded, nb = set(), 0
+    for score, s, S, rv, why, big, vx, rz in cands:
+        if not big: continue
+        tag = f"{s} vol {vx:.1f}x range {rz:+.1f} sd | RV30 {rv:.0%}"
+        if why: print(f"   SG-B signal {tag} REJECTED: {'; '.join(why)}"); continue
+        S, age, exp, oc, op, qc, qp = price(s, rv)
+        if age > er.STALE_SPOT_MIN: print(f"   SG-B signal {tag} REJECTED: spot print {age:.0f} min old"); continue
+        if not qc or not qp or not qc.get('iv_ask') or not qp.get('iv_ask'):
+            print(f"   SG-B signal {tag} REJECTED: no real quote on {'the call' if not qc else 'the put'}"); continue
+        ivr = max(qc['iv_ask'], qp['iv_ask']) / rv; tot = qc['prem'] + qp['prem']
+        cap = bankroll.budget('strangle', open_now=0)   # yesterday's pair is sold in this same run
+        line = (f"{tag} | {s} {S:.2f} | CALL {oc} ${qc['prem']:.0f} + PUT {op} ${qp['prem']:.0f} = ${tot:.0f} | IV ask {qc['iv_ask']:.2f}/{qp['iv_ask']:.2f} "
+                f"= {ivr:.2f}x RV30 (max leg) | exit at next close ({nxt})\n      call: REAL ASK [{qc['note']}]\n      put:  REAL ASK [{qp['note']}]")
+        if ivr <= B_IV_MAX and tot <= cap and nb < 1:
+            print(f"*** SG-B ENTRY {line.replace(' | exit', f' | FUNDED (cap ${cap:.0f}) | exit', 1)}"); funded.add(s); nb += 1
+        else:
+            r_ = f'IV {ivr:.2f}x > {B_IV_MAX}x' if ivr > B_IV_MAX else (f'${tot:.0f} > ${cap:.0f} cap' if tot > cap else 'max 1 funded tonight')
+            print(f"*** SG-B LOG {line.replace(' | exit', f' | WATCH ONLY ({r_}) | exit', 1)}")
     n = 0
-    for score, s, S, rv, why in cands:
+    for score, s, S, rv, why, *_ in cands:
         if score < M['thr'] or n >= MAXN: break
+        if s in funded: continue
         if why: print(f"   SG signal {s} score {score:.2f} REJECTED: {'; '.join(why)}"); continue
         S, age = er.live_price(s)   # 11-02: daily_frame's last bar was ~30 min stale on 10-30
         if age > er.STALE_SPOT_MIN: print(f"   SG signal {s} score {score:.2f} REJECTED: spot print {age:.0f} min old (> {er.STALE_SPOT_MIN}) - stale data, not priced"); continue
@@ -113,7 +151,7 @@ def run():
               f"\n      call: {src(qc, mc)}\n      put:  {src(qp, mp)}")
         n += 1
     if n == 0: print("   no strangle tonight")
-    else: print("   (November: strangles are NOT funded from the $1,000 book - log both legs as book=watch)")
+    else: print("   (model strangles are NOT funded - log both legs as book=watch; only SG-B ENTRY rows are funded, book=paper)")
 
 
 if __name__ == '__main__':

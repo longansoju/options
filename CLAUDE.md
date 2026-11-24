@@ -996,6 +996,13 @@ an EARLIER backtest, not from this month's data): (a) 1-day tickets funded only 
 backtest: +8% at 1.3x, break-even ~1.4x), else watch; (b) a small funded strangle slot on volume > 1.5x AND range > 2 sd nights
 only when IV_ask <= 1.05x RV30 (strangle_bt: +12.8% at IV = RV, IS +10.9 / OOS +14.4, break-even 1.10-1.13x); (c) trend-hold
 unchanged (only validated multi-week entry; dormant while SMH < 50d MA).
+**User chose (b) only, 11-24 ("B"). ADOPTED - funded strangle slot B** in `research/strangle_engine.py`: trigger = the
+backtest's own features (`er.overnight_features`: volx > log 1.5 AND z_rng > 2, at the 15:50 run), 0.2-sigma call + put,
+Friday >= 7 days out, real quotes on BOTH legs, FUNDED (book=paper) only if max-leg IV_ask/RV30 <= 1.05 and the pair fits
+`bankroll.CAP['strangle']` = 10% of equity (~$103 now), 1 funded pair/night; otherwise `SG-B LOG` -> book=watch with its IV.
+Sold at the next close by the existing exit loop. Expect it to fund rarely: most 0.2-sigma 2-week strangles cost $400-2,000
+(NVDA $1,044 on 11-23), so only cheap names fit the cap. (a) - the 1-day ticket IV gate - was NOT chosen; 1-day tickets run
+unchanged. Review slot B at 20 signals (funded + logged): real IV/RV distribution, funded P&L vs the +12.8% backtest row.
 
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
