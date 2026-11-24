@@ -56,9 +56,15 @@ def summary(book: pd.DataFrame | None = None) -> str:
     s = state(book)
     c = _funded(book)
     c = c[c.status == "closed"]
-    cost = float((c.entry_premium * c.strategy.map(COST).fillna(0.04)).sum())
-    return (f"November $1,000 book: equity ${s['equity']:,.0f} ({s['realized']:+,.0f} on {s['closed']} closed), "
-            f"after ~spread ${s['equity'] - cost:,.0f} | cash ${s['cash']:,.0f}, open premium ${s['open_premium']:,.0f}")
+    # 11-24: the old "after ~spread" line charged a spread estimate on EVERY closed trade, but since 11-04 real fills
+    # already pay the spread (ask in, bid out) - it double-counted those and still credited model-priced gains (the
+    # 11-03 AAPL ticket at a model $11 was ~$170 real). Report the two parts separately instead.
+    src = c.price_source.fillna("").str.lower()
+    real = src.str.contains("real") & ~src.str.contains("model")
+    pl = c.exit_premium - c.entry_premium
+    return (f"November $1,000 book: equity ${s['equity']:,.0f} ({s['realized']:+,.0f} on {s['closed']} closed) | "
+            f"real-quote fills {pl[real].sum():+,.0f} on {int(real.sum())} trades, model-priced {pl[~real].sum():+,.0f} on "
+            f"{int((~real).sum())} | cash ${s['cash']:,.0f}, open premium ${s['open_premium']:,.0f}")
 
 
 if __name__ == "__main__":
