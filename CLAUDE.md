@@ -970,6 +970,33 @@ post-hoc flip the 10-05 day-trade note forbids (n=39, one test). Use: as a warni
 put the day after a close below the lower band), not as a day-trade gate. Logging the entry's band position (z) on live day
 trades for a forward check was proposed to the user 11-22.
 
+### DAY TRADES PAUSED 2026-11-24 (user: "pause the day trades, keep the rest running. find out better ways to improve")
+November on REAL quotes (ask in, bid out): 42 funded trades -$760 on $10,789; day trades -$665 of it (27 trades). The +$31
+book headline was carried by model-priced rows (+$791 on 15, mostly the 11-03 AAPL 1-day ticket at a model $11, ~$170 real).
+`bankroll.summary()` now reports real-quote and model-priced P&L separately (the old "after ~spread" figure double-counted the
+spread on real fills). `DT_PAUSED = True` in `research/daytrade_engine.py`: 2-week day trades are not entered; a signal that
+would have been taken prints `DT signal ... PAUSED` with its real-quote contract, so the forward record continues. The Z0
+same-day slot, 1-day tickets, reversal tickets, trend-hold and the strangle watch rows keep running.
+**`research/vrp_quotes.py` - what we actually pay vs what the stock then did** (2,245 real quotes 11-10 -> 11-23, forward RV
+from 5m closes over min(expiry, 5 sessions), overnight gaps included):
+| quotes | median IV_ask / forward RV | cheap (< 1) | median IV_ask / RV30 |
+|---|---|---|---|
+| same-day (0 DTE), 15 name-days | **1.22** | 10% | 1.14 |
+| 1-6 days, 11 name-days | **1.58** | 14% | 1.50 |
+| 7-13 days, 37 name-days | 0.75 | 83% | 1.09 |
+| 14+ days (the 2-week vehicle), 60 name-days | **0.64** | 87% | 0.96 |
+| gate IV/RV30 <= 0.90 / 0.90-1.10 / 1.10-1.30 / > 1.30 | 0.56 / 0.66 / 0.69 / **1.37** | | |
+Short-dated options were DEAR even in a crash month; 2-week options were CHEAP against what followed - but the window holds
+the 11-19/20 crash, so that half is the regime, not an edge. The IV/RV30 gate carries information (rank corr +0.23; > 1.3x is
+the only dear bucket). Close-time quotes (the 15:50 engines): 2-week 1.08x RV30 (IQR 0.93-1.21, n=90), 1-day 1.32x (n=12).
+Reading: the day trades paired the CHEAPEST vehicle with the shortest hold (<= 120 min, where an ~8% spread is 40% of the +20%
+target and direction is a coin flip); the tickets use the DEAREST vehicles. No fix for the day trades was found (holding the
+same entries longer lost more, hold_bt 10-20) -> they stay paused. Proposed 11-24, pending the user (each threshold taken from
+an EARLIER backtest, not from this month's data): (a) 1-day tickets funded only if IV_ask/RV30 <= 1.30x on both legs (lottery
+backtest: +8% at 1.3x, break-even ~1.4x), else watch; (b) a small funded strangle slot on volume > 1.5x AND range > 2 sd nights
+only when IV_ask <= 1.05x RV30 (strangle_bt: +12.8% at IV = RV, IS +10.9 / OOS +14.4, break-even 1.10-1.13x); (c) trend-hold
+unchanged (only validated multi-week entry; dormant while SMH < 50d MA).
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day

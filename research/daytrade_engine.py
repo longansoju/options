@@ -29,6 +29,8 @@ EARN = {k: dt.date.fromisoformat(v) for k, v in config.DAYTRADE_EARNINGS.items()
 NEXT_SESSION = pd.Timestamp(np.busday_offset(TODAY, 1, roll='forward')).date()
 BUDGET, TGT, STOP, MAXHOLD = 1000.0, 0.20, 0.20, 120   # pen-test 10-06; BUDGET is now only the ceiling - see dt_budget()
 MAXN = 10**6          # no daily cap (user decision 2026-10-07); still one trade per name per day
+DT_PAUSED = True      # 11-24 user: "pause the day trades, keep the rest running" - 2-week day trades are NOT entered; signals that would
+                      # have been taken are printed as PAUSED with their real-quote contract (forward record). The Z0 same-day slot keeps running.
 PRE = pd.read_pickle('sweep_pre.pkl')
 ST = f'dt_state_{TODAY}.json'
 # Same-day ticket slot (user 11-03: "be slightly more open to such trades" -> "fund a tiny slot"): the first
@@ -270,6 +272,12 @@ while True:
                     if g:
                         if key not in st['rej']:
                             ev.append(f"DT signal {s} {kind} REJECTED: {'; '.join(g)} | {px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x{vflag}")
+                            st['rej'].append(key)
+                        continue
+                    if DT_PAUSED:
+                        if key not in st['rej']:
+                            ev.append(f"DT signal {s} {kind} PAUSED (day trades paused 11-24, not entered): would buy {c['occ']} ~${c['prem']:.0f} ({c['sig']:.2f} sigma) | "
+                                      f"{px:.2f} OR {lo:.2f}-{hi:.2f} held {run}m relvol {rv_:.2f}x{vflag}\n      {c['note']}")
                             st['rej'].append(key)
                         continue
                     if len(st['done']) + len(st['pos']) >= MAXN: break
