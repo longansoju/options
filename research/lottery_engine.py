@@ -37,7 +37,7 @@ def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 100 e
 
 def run(exits_only=False):
     now = pd.Timestamp.now(tz='America/New_York'); today = now.date()
-    nxt = pd.Timestamp(np.busday_offset(today, 1, roll='forward')).date()
+    nxt = pd.Timestamp(np.busday_offset(today, 1, roll='forward', holidays=['2026-11-26', '2026-12-25', '2027-01-01', '2027-01-18', '2027-02-15'])).date()   # 11-25: NYSE holidays (Thanksgiving was being treated as the next session)
     book = pd.read_csv('/home/user/options/data/recommendations.csv')
     openr = book[(book.strategy == 'lottery') & (book.status == 'open') & (book.book == 'paper')]
     for _, r in openr.iterrows():                                     # ---- exits at today's open

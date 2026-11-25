@@ -70,7 +70,7 @@ def fit():
 def run():
     M = json.load(open(MODEL)); w, mu, sd = np.array(M['w']), np.array(M['mu']), np.array(M['sd'])
     now = pd.Timestamp.now(tz='America/New_York'); today = now.date()
-    nxt = pd.Timestamp(np.busday_offset(today, 1, roll='forward')).date()
+    nxt = pd.Timestamp(np.busday_offset(today, 1, roll='forward', holidays=['2026-11-26', '2026-12-25', '2027-01-01', '2027-01-18', '2027-02-15'])).date()   # 11-25: NYSE holidays (Thanksgiving was being treated as the next session)
     smh, qqq = er.daily_frame('SMH', '1y'), er.daily_frame('QQQ', '1y')
     book = pd.read_csv('/home/user/options/data/recommendations.csv')
     openr = book[(book.strategy == 'strangle') & (book.status == 'open') & (book.book.isin(['paper', 'watch']))]   # from 11-02 new strangles are book=watch (not funded)
