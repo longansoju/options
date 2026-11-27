@@ -55,7 +55,7 @@ def run(exits_only=False):
     fomc = today in er.FOMC_DATES
     exp_ok = lambda s: (s in DAILY and nxt.weekday() in (0, 2, 4)) or nxt.weekday() == 4   # 11-12: these names list Mon/Wed/Fri expiries only (Yahoo), not daily
     cands = []
-    mins = max(16 * 60 - (now.hour * 60 + now.minute), 0)
+    mins = max(oq.close_min(now.date()) - (now.hour * 60 + now.minute), 0)
     for s in SYMS:
         try: d = er.daily_frame(s, '1y').dropna()
         except Exception as e: print(f"   skip {s}: {str(e)[:40]}"); continue

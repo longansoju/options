@@ -38,7 +38,7 @@ def inc(S): return 10.0 if S >= 1000 else 5.0 if S >= 500 else 2.5 if S >= 200 e
 
 
 def T_at(now, exp, mins_left=None):
-    m = max(16 * 60 - (now.hour * 60 + now.minute), 0) if mins_left is None else mins_left
+    m = max(oq.close_min(now.date()) - (now.hour * 60 + now.minute), 0) if mins_left is None else mins_left
     return (m / 390 + int(np.busday_count(now.date(), exp))) / 252
 
 
@@ -93,7 +93,7 @@ def run():
         hi20 = float(d.H.iloc[-21:-1].max())
         if S <= hi20: continue
         why = []
-        vol = float(d.V.iloc[-1]) * (390 / max(390 - max(16 * 60 - (now.hour * 60 + now.minute), 0), 1))
+        vol = float(d.V.iloc[-1]) * (390 / max(390 - max(oq.close_min(now.date()) - (now.hour * 60 + now.minute), 0), 1))
         volx = vol / float(d.V.iloc[-21:-1].mean())
         rv = float(c.pct_change().tail(30).std() * math.sqrt(252)); ct3 = (S / float(c.iloc[-4]) - 1) * 100
         dl = c.diff(); g = dl.clip(lower=0).ewm(alpha=1 / 14).mean(); l = (-dl.clip(upper=0)).ewm(alpha=1 / 14).mean()

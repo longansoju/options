@@ -58,7 +58,7 @@ def run():
         except Exception as e: print(f"   RT EXIT {r.occ_code}: no spot ({str(e)[:40]})"); continue
         rv = float(r.thesis.split('RV30 ')[1].split('%')[0]) / 100; qn = qty_of(r)
         exp = dt.date.fromisoformat(str(r.expiry)[:10])
-        Tx = (np.busday_count(today, exp, holidays=HOLIDAYS) + max(16 * 60 - (now.hour * 60 + now.minute), 0) / 390) / 252
+        Tx = (np.busday_count(today, exp, holidays=HOLIDAYS) + max(oq.close_min(now.date()) - (now.hour * 60 + now.minute), 0) / 390) / 252
         q = oq.fill(r.occ_code, 'sell', S, oq.spot_at(r.symbol) or S, rv=rv, T=Tx, patient=True,
                     spot_at_age=lambda m_, s_=r.symbol: oq.spot_at(s_, m_))
         K = float(r.strike); call = r.direction == 'call'
@@ -71,7 +71,7 @@ def run():
     # ---- signals
     print(f"[{now:%H:%M}ET] reversal-ticket scan (A: failed gap-up >= {GAP:.0%} at the low | B: big-volume, big-range close at "
           f"the low/high) | next session {nxt}")
-    mins = max(16 * 60 - (now.hour * 60 + now.minute), 0)
+    mins = max(oq.close_min(now.date()) - (now.hour * 60 + now.minute), 0)
     hits = []
     for s in SYMS:
         try: d = er.daily_frame(s, '3mo').dropna()

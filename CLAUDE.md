@@ -1004,6 +1004,16 @@ Sold at the next close by the existing exit loop. Expect it to fund rarely: most
 (NVDA $1,044 on 11-23), so only cheap names fit the cap. (a) - the 1-day ticket IV gate - was NOT chosen; 1-day tickets run
 unchanged. Review slot B at 20 signals (funded + logged): real IV/RV distribution, funded P&L vs the +12.8% backtest row.
 
+### Calendar fixes, Thanksgiving week 2026
+- **11-25:** the 1-day ticket and strangle engines computed the next session without holidays (Thanksgiving was "tomorrow") -
+  META's 1-day ticket was rejected "no expiry on 11-26". Both now pass the NYSE holiday list to `busday_offset`; re-run gave the
+  right answer (META pair $331 > cap).
+- **11-27 (13:00 early close):** every engine assumed a 16:00 close. The day-trade engine now uses `HALF_DAYS` (entries until
+  12:00, flat 12:45, same-day pricing to 13:00); `oq.close_min(date)` is the shared close time used by `years_left` and the
+  strangle / trend-hold / 1-day / reversal engines. The META261127C00630000 reversal exit was printed at $56 off a 16:00 clock and
+  re-priced by hand to $17 (correct 13:00 clock). Next half day in the list: 2026-12-24 - extend `HALF_DAYS` (option_quotes.py and
+  daytrade_engine.py) and the holiday lists for 2027.
+
 ## Parked idea — cheap same-day "lottery" calls (needs a real chain to test)
 
 **2026-10-07, MU:** the user's broker showed the MU 1080 call expiring that day

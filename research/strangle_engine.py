@@ -52,7 +52,7 @@ def friday_after(day):
 
 
 def T_at(now, exp):
-    return (max(16 * 60 - (now.hour * 60 + now.minute), 0) / 390 + int(np.busday_count(now.date(), exp))) / 252
+    return (max(oq.close_min(now.date()) - (now.hour * 60 + now.minute), 0) / 390 + int(np.busday_count(now.date(), exp))) / 252
 
 
 def fit():

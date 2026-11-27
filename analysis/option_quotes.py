@@ -18,6 +18,12 @@ import pandas as pd
 
 warnings.filterwarnings('ignore')
 DELAY_MIN = 15          # Yahoo option quotes ~15 min behind
+HALF_DAYS = {dt.date(2026, 11, 27), dt.date(2026, 12, 24)}   # NYSE 13:00 ET early closes (11-27: engines priced to 16:00)
+
+
+def close_min(d):
+    """Session close in minutes after midnight ET (13:00 on early-close days, else 16:00)."""
+    return 13 * 60 if d in HALF_DAYS else 16 * 60
 CACHE_S = 60            # a chain younger than this is reused without a new request
 STALE_S = 600           # 11-05: if a fresh fetch fails (Yahoo 429), a chain up to 10 min old beats the model fallback
 _cache: dict = {}       # (root, expiry) -> (fetched_at, chain or None)
@@ -120,7 +126,7 @@ def years_left(exp, now=None):
     """Time to the 16:00 ET close of the expiry day, in trading years (session minutes / 390 / 252)."""
     import numpy as np
     now = now or pd.Timestamp.now(tz='America/New_York')
-    mins = min(max(16 * 60 - (now.hour * 60 + now.minute), 0), 390)
+    mins = min(max(close_min(now.date()) - (now.hour * 60 + now.minute), 0), 390)
     days = int(np.busday_count(now.date(), exp))
     return max((mins / 390 + days) / 252, 1e-6)
 
