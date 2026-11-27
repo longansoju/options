@@ -44,8 +44,15 @@ ZDAYS = (0, 2, 4)   # 11-12: Yahoo lists Mon/Wed/Fri expiries only for these nam
 def N(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
+HALF_DAYS = {dt.date(2026, 11, 27), dt.date(2026, 12, 24)}        # 11-27: NYSE early closes (13:00 ET)
+CLOSE_MIN = 13 * 60 if TODAY in HALF_DAYS else 16 * 60            # session close, minutes after midnight ET
+CLOSE_T = dt.time(CLOSE_MIN // 60, 0)
+LAST_ENTRY = dt.time(CLOSE_MIN // 60 - 1, 0)                      # entries stop 60 min before the close (15:00 on a full day)
+FLAT_T = dt.time(CLOSE_MIN // 60 - 1, 45)                         # flat 15 min before the close (15:45 on a full day)
+
+
 def T_at(ts):
-    mins = max(16 * 60 - (ts.hour * 60 + ts.minute), 0)
+    mins = max(CLOSE_MIN - (ts.hour * 60 + ts.minute), 0)
     return max((mins / 390 + int(np.busday_count(ts.date(), EXPIRY))) / 252, 1e-6)
 
 
@@ -118,7 +125,7 @@ def gates(p, kind, sym):
     return b
 
 
-def z_left(ts): return max(16 * 60 - (ts.hour * 60 + ts.minute), 0) / 390 / 252
+def z_left(ts): return max(CLOSE_MIN - (ts.hour * 60 + ts.minute), 0) / 390 / 252
 
 
 def z_pick(sym, S, kind, ts, rv, cap, Sq=None, sa=None):
@@ -144,7 +151,7 @@ st = json.load(open(ST)) if os.path.exists(ST) else {'pos': {}, 'done': [], 'rej
 st.setdefault('start', pd.Timestamp.now(tz='America/New_York').isoformat())   # first engine run of the day
 while True:
     now = pd.Timestamp.now(tz='America/New_York')
-    if now.time() > dt.time(16, 1) and not st['pos']:
+    if now.time() > dt.time(CLOSE_MIN // 60, 1) and not st['pos']:
         say(now, f"close — day-trade engine ending | entries today {len(st['done']) + len(st['pos'])}"); break
     try:
         live = {}
@@ -153,7 +160,7 @@ while True:
                 x = er.fetch_chart(s, '1m', '1d')
             except (KeyError, IndexError, TypeError):   # no bars yet (e.g. 09:30:00) - skip this name this poll
                 continue
-            x = x[(x.index.time >= dt.time(9, 30)) & (x.index.time < dt.time(16, 0))].dropna()
+            x = x[(x.index.time >= dt.time(9, 30)) & (x.index.time < CLOSE_T)].dropna()
             x = x[x.V > 0]
             if len(x): live[s] = x
         ev = []
@@ -172,7 +179,7 @@ while True:
                 if best >= e * (1 + TGT): reason, exitp, ref = f'+{TGT:.0%} target (resting limit)', e * (1 + TGT), ts; break
                 if (ts - pd.Timestamp(p['ts'])).total_seconds() >= MAXHOLD * 60:
                     reason, exitp, ref = f'{MAXHOLD}-min max-hold time stop', bs(r.C, K, T, rv, kind) * 100, ts; break
-                if ts.time() >= dt.time(15, 45):
+                if ts.time() >= FLAT_T:
                     reason, exitp, ref = '15:45 day-trade time stop', bs(r.C, K, T, rv, kind) * 100, ts; break
             if reason:
                 px = float(since.loc[ref].C)
@@ -187,13 +194,13 @@ while True:
                 w = bs(r.L if k == 'call' else r.H, z['K'], T, zv, k) * 100; b = bs(r.H if k == 'call' else r.L, z['K'], T, zv, k) * 100
                 if w <= z['prem'] * 0.5: zr = ('-50% stop', z['prem'] * 0.5, ts); break
                 if b >= z['prem'] * 2.0: zr = ('+100% target (resting limit)', z['prem'] * 2.0, ts); break
-                if ts.time() >= dt.time(15, 45): zr = ('15:45 time stop', bs(r.C, z['K'], T, zv, k) * 100, ts); break
+                if ts.time() >= FLAT_T: zr = (f'{FLAT_T:%H:%M} time stop', bs(r.C, z['K'], T, zv, k) * 100, ts); break
             if zr:
                 ev.append(f"*** Z0 EXIT {z['occ']} — {zr[0]} at {zr[2].strftime('%H:%M')} | ~${zr[1]:.0f} vs entry ${z['prem']:.0f} ({(zr[1]/z['prem']-1)*100:+.0f}%) | {z['sym']} {float(since.loc[zr[2]].C):.2f}")
                 z['done'] = True
         # ---- quote prefetch (11-05): warm the option-chain cache for the 2 names closest to breaking their opening range,
         # so a confirmed break finds a real quote even while Yahoo rate-limits (11-04: NBIS + the AAPL ticket fell back to model)
-        if dt.time(10, 0) <= now.time() < dt.time(15, 0):
+        if dt.time(10, 0) <= now.time() < LAST_ENTRY:
             near = []
             for s, x in live.items():
                 if s not in PRE or s in {p_['sym'] for p_ in st['pos'].values()}: continue
@@ -208,7 +215,7 @@ while True:
         # ---- entries
         n_today = len(st['done']) + len(st['pos'])
         held = {p['sym'] for p in st['pos'].values()} | {o[:len(o) - 15] for o in st['done']}
-        if dt.time(10, 0) <= now.time() < dt.time(15, 0) and n_today < MAXN:
+        if dt.time(10, 0) <= now.time() < LAST_ENTRY and n_today < MAXN:
             for s, x in live.items():
                 if s in held or s not in PRE: continue
                 p = PRE[s]; orb = x[x.index.time < dt.time(10, 0)]
