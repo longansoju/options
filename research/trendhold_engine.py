@@ -113,7 +113,7 @@ def run():
         q = oq.fill(f"{s}{exp.strftime('%y%m%d')}C{int(round(K * 1000)):08d}", 'buy', S, oq.spot_at(s) or S, rv=rv, T=T, patient=True, spot_at_age=lambda m_, s_=s: oq.spot_at(s_, m_)) if S > hi20 else None
         p = q['prem'] if q else mp
         qsrc = (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or rv:.3f}" if q else f"NO QUOTE - model ${mp:.0f} (flag price_source=model)")
-        cap = min(BUDGET, bankroll.budget('trendhold', open_now=len(openr) + n))
+        cap = min(1e9 if bankroll.UNCAPPED else BUDGET, bankroll.budget('trendhold', open_now=len(openr) + n))
         if p > cap: why.append(f'call ${p:.0f} > ${cap:.0f} (November book: 50% of equity, within cash, max 1 open)')
         tag = f"{s} {S:.2f} > 20d high {hi20:.2f} | vol {volx:.2f}x | 3d {ct3:+.1f}% | RSI {rsi:.0f} | RV30 {rv:.0%}"
         if why: print(f"   TH signal {tag} REJECTED: {'; '.join(why)}"); continue

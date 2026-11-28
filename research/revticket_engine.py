@@ -115,7 +115,7 @@ def run():
             print(f"   RT signal {tag} REJECTED: no real quote on {occ}"); continue
         ivr = q['iv_ask'] / rv; sg = abs(math.log(K / S)) / (rv * math.sqrt(1 / 252))
         frac = next((f for x, f in TIERS if ivr <= x), 0.0)
-        cap = min(frac * bankroll.state()['equity'], bankroll.budget('revticket', unbooked=spent, open_now=0))
+        cap = min((1e9 if frac > 0 else 0.0) if bankroll.UNCAPPED else frac * bankroll.state()['equity'], bankroll.budget('revticket', unbooked=spent, open_now=0))
         qn = min(MAXQ, int(cap // q['prem'])) if q['prem'] > 0 else 0
         base = (f"{tag} | {kind.upper()} {occ} ${q['prem']:.0f}/contract ({sg:.2f} daily-sigma, expiry {exp}, {ns} session(s)) | "
                 f"IV ask {q['iv_ask']:.2f} = {ivr:.2f}x RV30 | spread {q['spread']:.0%}")

@@ -91,7 +91,7 @@ def run(exits_only=False):
             print(f"   LT signal {tag}REJECTED: no real quote on {'the call' if not qc else 'the put'} (model pair ${mc + mp:.0f}; a model-priced ticket is not booked)"); continue
         pc, pp = (qc['prem'] if qc else mc), (qp['prem'] if qp else mp)
         src = lambda q, m: (f"REAL ASK [{q['note']}] IVbid {q['iv_bid'] or q['iv_ask'] or 0:.3f}" if q else f"NO QUOTE - model ${m:.0f} (flag price_source=model)")
-        cap = min(PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
+        cap = min(1e9 if bankroll.UNCAPPED else PAIR_MAX, bankroll.budget('lottery', unbooked=spent))
         if pc + pp > cap: print(f"   LT signal {tag}REJECTED: pair ${pc + pp:.0f} at the ask > ${cap:.0f} (November book: 10% of equity, within cash) | model pair ${mc + mp:.0f}"); continue
         print(f"*** LT ENTRY {tag}| CALL {occ('C', Kc)} ${pc:.0f} + PUT {occ('P', Kp)} ${pp:.0f} = ${pc + pp:.0f} | sell both at the {nxt} open | spot = live 1m print {S:.2f}, {age:.0f} min old"
               f"\n      call: {src(qc, mc)}\n      put:  {src(qp, mp)}")

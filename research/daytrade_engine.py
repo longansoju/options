@@ -104,7 +104,7 @@ def dt_budget(st):
         book = pd.read_csv('/home/user/options/data/recommendations.csv')
         booked = set(book[(book.status == 'open')].occ_code)
         unbooked = sum(p['prem'] for o, p in st['pos'].items() if o not in booked)
-        return min(BUDGET, bankroll.budget('daytrade', book, unbooked=unbooked, open_now=len(st['pos'])))
+        return min(1e9 if bankroll.UNCAPPED else BUDGET, bankroll.budget('daytrade', book, unbooked=unbooked, open_now=len(st['pos'])))
     except Exception:
         return 0.0      # cannot read the book -> no new entries
 

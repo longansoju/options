@@ -18,6 +18,7 @@ from __future__ import annotations
 import pandas as pd
 
 START, CAPITAL = "2026-11-02", 1000.0
+UNCAPPED = True   # user 11-28 "uncap the paper book": no premium / equity / cash ceilings; max-open counts and every quality rule stay
 CAP = {"daytrade": 0.25, "lottery": 0.10, "trendhold": 0.50, "zerodte": 0.02, "revticket": 0.05, "strangle": 0.10}   # strangle slot B 11-24: <= 10% of equity per pair, 1 pair; revticket: 11-21, tiered in the engine: <= 5% of equity at IV <= 1.0x RV30, 2.5% at 1.0-1.1x
 MAX_OPEN = {"daytrade": 2, "trendhold": 1, "zerodte": 1, "revticket": 2, "strangle": 2}   # strangle: 2 legs = 1 pair
 COST = {"daytrade": 0.04, "lottery": 0.10, "zerodte": 0.10, "revticket": 0.10, "trendhold": 0.04, "strangle": 0.04}   # round-trip spread estimate
@@ -48,6 +49,8 @@ def budget(strategy: str, book: pd.DataFrame | None = None, unbooked: float = 0.
     n = s["n_open"].get(strategy, 0) if open_now is None else open_now
     if strategy not in CAP or n >= MAX_OPEN.get(strategy, 10 ** 6):
         return 0.0
+    if UNCAPPED:
+        return 1e9
     return max(0.0, min(CAP[strategy] * s["equity"], s["cash"]))
 
 

@@ -1019,6 +1019,20 @@ The mechanism: on days that DO confirm, the early leg beats the confirmed leg (h
 tell which half at entry. The underlying moves after either entry average ~0%: there is no direction edge for the timing to
 improve; the option cost (spread + time decay) is what loses. The split only spreads the same loss across two entries.
 
+### PAPER BOOK UNCAPPED 2026-11-28 (user: "uncap the paper book. perform a backtest to see whether we missed out on profit making opportunities")
+`bankroll.UNCAPPED = True`: `budget()` returns no premium / equity-fraction / cash ceiling, and the engines' fixed ceilings (day trade
+$1,000, trend-hold $1,000, 1-day pair $300, reversal 5%/2.5% of equity) are lifted. KEPT: max-open counts, 1 contract per day trade /
+trend-hold, reversal max 3 contracts + its IV tiers (> 1.10x RV30 = watch), strangle slot B's IV <= 1.05x rule, the 10% / 25% spread
+caps, real-quote-only entries, all gates, DT_PAUSED. Cash can now go negative - read `bankroll.summary()` as P&L, not a balance.
+`research/uncap_review.py` (model prices, rules fixed before running):
+- **Day trades - the cap kept us OUT of losses.** November gate-passing signals, 8% spread: fit the cap n=26, -2.9%, -$41; over the cap
+  but <= $1,000 n=36, 58% win, -0.7%, -$238; over $1,000 n=58, -1.9%, -$4,433. Fully uncapped November: -$4,712 on $170k of premium.
+  Whole 09-10 -> 11-25 window: <= $1,000 -5.1%, > $1,000 -3.9% (IS -8.1 / OOS -1.2). Bigger tickets add dollars of the same ~-2 to -5%.
+- **1-day tickets - the cap DID keep us out of two big nights**, both single market events: 11-05 close (chip crash, 22 names, next open
+  gapped +5-8%) and 11-20 close (MU/NVDA into the Huang-reinstatement Monday). At IV 1.5x RV the over-cap tickets were +$15,331 on
+  $18,234; the other three trigger nights lost. Caveat measured the same night: the two REAL fills on 11-05 (AAPL, SMCI pairs) lost
+  16-17% while the model said +3% / +25% at 1.5x - the model is ~20+ points too kind at the open. So: two events, real-price unknown.
+
 ### Calendar fixes, Thanksgiving week 2026
 - **11-25:** the 1-day ticket and strangle engines computed the next session without holidays (Thanksgiving was "tomorrow") -
   META's 1-day ticket was rejected "no expiry on 11-26". Both now pass the NYSE holiday list to `busday_offset`; re-run gave the
