@@ -1004,6 +1004,21 @@ Sold at the next close by the existing exit loop. Expect it to fund rarely: most
 (NVDA $1,044 on 11-23), so only cheap names fit the cap. (a) - the 1-day ticket IV gate - was NOT chosen; 1-day tickets run
 unchanged. Review slot B at 20 signals (funded + logged): real IV/RV distribution, funded P&L vs the +12.8% backtest row.
 
+### Split entry (half at the early VWAP reclaim, half at confirmation) - user 11-28 "backtest the split rule" - NOT adopted
+`research/split_entry_bt.py` (rules fixed before running; 26 names, 5m bars 08-12 -> 11-27, 2-week 0.2-sigma option at RV30,
+8% spread). E1 = first 5m close back across VWAP after trading on the wrong side (09:45-14:00, stop under/over the morning
+extreme); E2 = opening-range break held 2 x 5m closes on the right side of VWAP. Every version LOSES in every period:
+| calls, Friday set-up (gap held) | trades | avg per trade | total units |
+|---|---|---|---|
+| S1 confirmed only | 248 | -10.3% | -25.6 |
+| S2 early only | 483 | -8.3% | -40.0 |
+| S3 split 50/50 | 483 | -6.8% | -32.8 |
+Same picture for puts and with no gap filter, and with a hold-to-close exit instead of the VWAP exit (robustness, EXIT=close).
+The mechanism: on days that DO confirm, the early leg beats the confirmed leg (hold-to-close: E1 about +0.1% to +4% vs E2 -5% to
+-11%) - the user's "too late" point is real - but about half of early signals never confirm and those lose 11-19%, and you cannot
+tell which half at entry. The underlying moves after either entry average ~0%: there is no direction edge for the timing to
+improve; the option cost (spread + time decay) is what loses. The split only spreads the same loss across two entries.
+
 ### Calendar fixes, Thanksgiving week 2026
 - **11-25:** the 1-day ticket and strangle engines computed the next session without holidays (Thanksgiving was "tomorrow") -
   META's 1-day ticket was rejected "no expiry on 11-26". Both now pass the NYSE holiday list to `busday_offset`; re-run gave the
